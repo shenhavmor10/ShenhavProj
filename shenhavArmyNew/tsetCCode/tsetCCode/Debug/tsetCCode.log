@@ -1,0 +1,25 @@
+﻿  test.c
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(26,28): error C2065:  'null': undeclared identifier
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(26,28): warning C4047:  '==': 'int **' differs in levels of indirection from 'int'
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(44,19): warning C4047:  '=': 'char' differs in levels of indirection from 'char *'
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(52,8): warning C4013:  'prinf' undefined; assuming extern returning int
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(60,24): warning C4013:  'alloc' undefined; assuming extern returning int
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(60,1): warning C4047:  'initializing': 'char *' differs in levels of indirection from 'int'
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(83,17): error C2065:  'null': undeclared identifier
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(86,2): error C2143:  syntax error: missing ';' before '}'
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(87,7): error C2100:  illegal indirection
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(90,14): error C2143:  syntax error: missing ')' before '*'
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(90,14): error C2143:  syntax error: missing '{' before '*'
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(90,19): error C2059:  syntax error: ')'
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(91,1): error C2054:  expected '(' to follow 'sss'
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(99,2): error C2143:  syntax error: missing ';' before 'if'
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(99,18): error C2065:  'null': undeclared identifier
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(99,18): warning C4047:  '!=': 'char *' differs in levels of indirection from 'int'
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(102,12): warning C4047:  'function': 'int *' differs in levels of indirection from 'char **'
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(102,12): warning C4024:  'main': different types for formal and actual parameter 1
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(102,12): error C2198:  'main': too few arguments for call
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(103,8): error C2065:  'fname': undeclared identifier
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(103,14): warning C4047:  '=': 'int' differs in levels of indirection from 'char *'
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(105,8): error C2065:  'fname': undeclared identifier
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(105,14): warning C4047:  '=': 'int' differs in levels of indirection from 'char *'
+C:\Users\shenhav.mor\source\repos\tsetCCode\tsetCCode\test.c(107,1): error C2143:  syntax error: missing ';' before '}'

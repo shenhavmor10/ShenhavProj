@@ -1,0 +1,12 @@
+C:\Users\Shenhav\Desktop\ArmyNew2\shenhavArmyNew\Client2\bin\Debug\Client2.exe.config
+C:\Users\Shenhav\Desktop\ArmyNew2\shenhavArmyNew\Client2\bin\Debug\Client2.exe
+C:\Users\Shenhav\Desktop\ArmyNew2\shenhavArmyNew\Client2\bin\Debug\Client2.pdb
+C:\Users\Shenhav\Desktop\ArmyNew2\shenhavArmyNew\Client2\bin\Debug\ClassesSolution.exe
+C:\Users\Shenhav\Desktop\ArmyNew2\shenhavArmyNew\Client2\bin\Debug\Newtonsoft.Json.dll
+C:\Users\Shenhav\Desktop\ArmyNew2\shenhavArmyNew\Client2\bin\Debug\ClassesSolution.pdb
+C:\Users\Shenhav\Desktop\ArmyNew2\shenhavArmyNew\Client2\bin\Debug\ClassesSolution.exe.config
+C:\Users\Shenhav\Desktop\ArmyNew2\shenhavArmyNew\Client2\obj\Debug\DocumentationTool.csprojAssemblyReference.cache
+C:\Users\Shenhav\Desktop\ArmyNew2\shenhavArmyNew\Client2\obj\Debug\DocumentationTool.csproj.CoreCompileInputs.cache
+C:\Users\Shenhav\Desktop\ArmyNew2\shenhavArmyNew\Client2\obj\Debug\DocumentationTool.csproj.CopyComplete
+C:\Users\Shenhav\Desktop\ArmyNew2\shenhavArmyNew\Client2\obj\Debug\Client2.exe
+C:\Users\Shenhav\Desktop\ArmyNew2\shenhavArmyNew\Client2\obj\Debug\Client2.pdb

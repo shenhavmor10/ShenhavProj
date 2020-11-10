@@ -1,0 +1,5 @@
+not checking if allocation succeeded for parameter pointer5
+Pointer pointer isnt being free'd
+Pointer pointer2 isnt being free'd
+Parameter retval isnt being checked if he is NULL in function
+GOOD
