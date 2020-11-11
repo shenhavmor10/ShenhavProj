@@ -1,0 +1,6 @@
+perfect code - 
+C:\Users\student\source\repos\TestCCode2\TestCCode2 - test.c
+C:\Users\student\source\repos\TestCCode2\TestCCode2
+C:\MinGW\include
+C:\MinGW\include\ddk
+

@@ -306,7 +306,7 @@ namespace testServer2
             // checks if there is already the same name in the same scope.
             if (IsExistInArrayList(((ArrayList)blocksAndNames[blocksAndNames.Count - 1]), name) != null)
             {
-                Server.ConnectionServer.CloseConnection(threadNumber, ("you have used the same name for multiple variables in row " + sr.curRow + ". name - " + name));
+                Server.ConnectionServer.CloseConnection(threadNumber, ("you have used the same name for multiple variables in row " + sr.curRow + ". name - " + name),GeneralConsts.ERROR);
                 CompileError = true;
             }
             else
@@ -320,7 +320,7 @@ namespace testServer2
             }
             if(!DifferentTypes)
             {
-                Server.ConnectionServer.CloseConnection(threadNumber, codeLine + " types of both variables are different in row : " + sr.curRow);
+                Server.ConnectionServer.CloseConnection(threadNumber, codeLine + " types of both variables are different in row : " + sr.curRow, GeneralConsts.ERROR);
                 CompileError = true;
             }
             
@@ -376,7 +376,7 @@ namespace testServer2
             //make sures the variable 2 is exist.
             if(var2==null)
             {
-                Server.ConnectionServer.CloseConnection(threadNumber,"There is no parameter named " + varName2 + " in row : " + sr.curRow);
+                Server.ConnectionServer.CloseConnection(threadNumber,"There is no parameter named " + varName2 + " in row : " + sr.curRow, GeneralConsts.ERROR);
                 CompileError = true;
                 isSameType = false;
             }
@@ -449,14 +449,14 @@ namespace testServer2
                     string error=(codeLine + " keyword does not exist. row : "+sr.curRow);
                     Console.WriteLine(sr.curRow);
                     Console.WriteLine(error);
-                    Server.ConnectionServer.CloseConnection(threadNumber, error);
+                    Server.ConnectionServer.CloseConnection(threadNumber, error, GeneralConsts.ERROR);
                     CompileError = true;
 
                 }
                 if(!DifferentTypesCheck)
                 {
                     string error=(codeLine + " types of both variables are different in row : "+sr.curRow);
-                    Server.ConnectionServer.CloseConnection(threadNumber, error);
+                    Server.ConnectionServer.CloseConnection(threadNumber, error, GeneralConsts.ERROR);
                     CompileError = true;
                 }
                 pos = 0;
@@ -483,7 +483,7 @@ namespace testServer2
                     catch(Exception e)
                     {
                         //bad scoping causes the function to remove from an ArrayList something while its already 0.
-                        Server.ConnectionServer.CloseConnection(threadNumber,"bad scoping in function in row "+ sr.curRow);
+                        Server.ConnectionServer.CloseConnection(threadNumber,"bad scoping in function in row "+ sr.curRow, GeneralConsts.ERROR);
                         CompileError = true;
                     }
                 }
@@ -518,7 +518,7 @@ namespace testServer2
             }
             catch(Exception e)
             {
-                Server.ConnectionServer.CloseConnection(threadNumber, FILE_NOT_FOUND);
+                Server.ConnectionServer.CloseConnection(threadNumber, FILE_NOT_FOUND, GeneralConsts.ERROR);
             }
             if(sr!=null)
             {
@@ -610,7 +610,7 @@ namespace testServer2
             catch (Exception e)
             {
                 Console.WriteLine("{0} Second exception caught.", e);
-                Server.ConnectionServer.CloseConnection(threadNumber, FILE_NOT_FOUND);
+                Server.ConnectionServer.CloseConnection(threadNumber, FILE_NOT_FOUND, GeneralConsts.ERROR);
                 endLoop = true;
             }
 

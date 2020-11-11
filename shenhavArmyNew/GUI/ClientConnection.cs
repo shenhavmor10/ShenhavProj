@@ -68,9 +68,11 @@ namespace GUI
                         //Change the textBlock to the error or final path depends if the code is good or bad.
                         MainWindow.main.setTextBlock(newData, number);
                     }
+                    else
+                    {
+                        recieveMessage(sender);
+                    }
                     sender.Close();
-                    
-
                     // We receive the messagge using  
                     // the method Receive(). This  
                     // method returns number of bytes 

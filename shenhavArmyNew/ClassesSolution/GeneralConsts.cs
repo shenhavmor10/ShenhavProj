@@ -14,5 +14,8 @@ namespace ClassesSolution
         public const string EQUAL_SIGN = "=";
         public const int NOT_FOUND_STRING = -1;
         public const char TAB_SPACE = '\t';
+        public const int ONGOING_THREAD = 0;
+        public const int ERROR = 1;
+        public const int FINISHED_SUCCESFULLY = 2;
     }
 }

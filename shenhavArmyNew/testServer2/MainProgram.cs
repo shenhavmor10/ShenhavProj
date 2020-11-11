@@ -24,11 +24,12 @@ namespace testServer2
         const int PROJECT_FOLDER_INDEX = 1;
         const int START_INDEX_OF_TOOLS = 0;
         //paths for all files.
-        const string toolExeFolder = @"..\..\..\..\ToolsExe";
+        const string toolExeFolder = @"..\..\..\ToolsExe";
         const string ignoreVariablesTypesPath = @"..\..\..\ignoreVariablesType.txt";
         //static string filePath = @"C:\Users\Shenhav\Desktop\Check\checkOne.c";
         const string ansiCFile = @"..\..\..\Ansikeywords.txt";
         const string CSyntextFile = @"..\..\..\CSyntext.txt";
+        const string FINISH_SUCCESFULL = "Finished succesfully code is ready at the destination path.";
         static bool compileError = false;
         static ArrayList currentDataList = new ArrayList();
         static int threadNumber = 0;
@@ -73,6 +74,9 @@ namespace testServer2
                 GeneralRestApiServerMethods.CreateFinalJson(filePath, includes, defines, final_json);
                 Thread threadOpenTools = new Thread(() => RunAllTasks(filePath, destPath, tools));
                 threadOpenTools.Start();
+                threadOpenTools.Join();
+                ConnectionServer.CloseConnection(threadNumber, FINISH_SUCCESFULL,GeneralConsts.FINISHED_SUCCESFULLY);
+
             }
         }
         public static void RunAllTasks(string filePath,string destPath,ArrayList tools)
@@ -80,6 +84,7 @@ namespace testServer2
             for (int i = START_INDEX_OF_TOOLS; i < tools.Count; i++)
             {
                 tools[i] = toolExeFolder + "\\" + tools[i] + ".exe";
+                Console.WriteLine(toolExeFolder + "\\" + tools[i] + ".exe");
             }
             for (int i= START_INDEX_OF_TOOLS; i<tools.Count;i++)
             {
@@ -118,7 +123,7 @@ namespace testServer2
             serverThread = new Thread(() => Server.ConnectionServer.ExecuteServer(11111));
             serverThread.Start();
             Console.WriteLine("started socket for client listen");
-            while(!ConnectionServer.GetCloseAllBool())
+            while(ConnectionServer.GetCloseAllBool()==false)
             {
                 //checks if something got added to the server list by the gui. if it did 
                 //it copies it to the main current list and start to run all the checks on the paths

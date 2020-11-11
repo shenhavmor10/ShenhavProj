@@ -42,17 +42,16 @@ namespace GUI
             InitializeComponent();
             main = this;
             SqlConnection cnn;
-            string connectionString = "Data Source=DESKTOP-L628613\\SQLEXPRESS;Initial Catalog=ToolsDB;User ID=shenhav;Password=1234";
+            string connectionString = "Data Source=E560-02\\SQLEXPRESS;Initial Catalog=ToolsDB;User ID=shenhav;Password=1234";
             cnn = new SqlConnection(connectionString);
             cnn.Open();
             SqlCommand command = new SqlCommand("Select tool_name,tool_desc,tool_exe_name from tools_table", cnn);
             using (SqlDataReader reader = command.ExecuteReader())
             {
-                
                 while (reader.Read())
                 {
                     CheckBox temp = new CheckBox();
-                    temp.Content= reader["tool_name"].ToString();
+                    temp.Content= reader["tool_exe_name"].ToString();
                     StackPanelCheckBox.Children.Add(temp);
                 }
             }
@@ -84,13 +83,13 @@ namespace GUI
             string path;
             if(content=="Connect")
             {
-                path = FileNameTextBox1.Text + ',' + FileNameTextBox2.Text + ',' + FileNameTextBox3.Text + ',' + FileNameTextBox4.Text+','+FileNameTextBoxDest;
+                path = FileNameTextBox1.Text + ',' + FileNameTextBox2.Text + ',' + FileNameTextBox3.Text + ',' + FileNameTextBox4.Text+','+FileNameTextBoxDest2.Text;
                 //Connect.IsEnabled = false;
                 Console.WriteLine("connect1 pressed.");
             }
             else
             {
-                path = FileNameTextBox5.Text + ',' + FileNameTextBox6.Text + ',' + FileNameTextBox7.Text + ',' + FileNameTextBox8.Text + ',' + FileNameTextBoxDest2;
+                path = FileNameTextBox5.Text + ',' + FileNameTextBox6.Text + ',' + FileNameTextBox7.Text + ',' + FileNameTextBox8.Text + ',' + FileNameTextBoxDest.Text;
                 //Connect3.IsEnabled = false;
                 Console.WriteLine("connect3 pressed.");
 
@@ -105,7 +104,7 @@ namespace GUI
             }
             if(tools!= GeneralConsts.EMPTY_STRING)
             {
-                path += "," + tools;
+                path += tools;
             }
             Thread clientThread;
             clientThread = new Thread(() => ClientConnection.ExecuteClient(path,threadNumber));
@@ -161,6 +160,12 @@ namespace GUI
                         break;
                     case "Browse8":
                         FileNameTextBox8.Text = folderDialog.SelectedPath;
+                        break;
+                    case "BrowseDest":
+                        FileNameTextBoxDest.Text = folderDialog.SelectedPath;
+                        break;
+                    case "BrowseDest2":
+                        FileNameTextBoxDest2.Text = folderDialog.SelectedPath;
                         break;
                     default:
                         break;

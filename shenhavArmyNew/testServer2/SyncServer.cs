@@ -34,7 +34,7 @@ namespace testServer2
             //start listening.
             listener.Start();
 
-            while (!ConnectionServer.GetCloseAllBool())
+            while (ConnectionServer.GetCloseAllBool()==false)
             {
                 try
                 {

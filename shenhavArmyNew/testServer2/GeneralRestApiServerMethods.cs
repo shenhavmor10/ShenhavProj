@@ -226,7 +226,7 @@ namespace testServer2
             documetationString += codeLine + "\n\r";
             if (!(firstLineDocumentation.IndexOf("//") != NOT_FOUND_STRING) && !(firstLineDocumentation.IndexOf("/*") != NOT_FOUND_STRING))
             {
-                documetationString = "No documentation for this function";
+                documetationString = GeneralConsts.EMPTY_STRING;
             }
             if ((firstLineDocumentation.IndexOf("/*") != NOT_FOUND_STRING))
             {

@@ -11,13 +11,13 @@ using ClassesSolution;
 namespace Server
 {
     public class ConnectionServer
-    {
+    { 
         //globals
         static Mutex mutex=new Mutex();
         static Mutex mutexGetClose = new Mutex();
         static ArrayList threadsData = new ArrayList();
         static ArrayList closeConnections = new ArrayList();
-        static ArrayList errorList = new ArrayList();
+        static ArrayList responseList = new ArrayList();
         static int threadNumber=0;
         static bool closeAll = false;
         public static bool GetCloseAllBool()
@@ -34,12 +34,12 @@ namespace Server
         /// </summary>
         /// <param name="index"> client number</param>
         /// <param name="error"> error type</param>
-        public static void CloseConnection(int index,string error)
+        public static void CloseConnection(int index,string response,int messageType)
         {
             //mutex.
             mutex.WaitOne();
-            closeConnections[index] = 1;
-            errorList[index] = error;
+            closeConnections[index] = messageType;
+            responseList[index] = response;
             mutex.ReleaseMutex();
         }
         /// <summary>
@@ -49,7 +49,7 @@ namespace Server
         public static void StartConnection(Socket clientSocket)
         {
             bool stopWhile = false;
-            while (true&&!stopWhile)
+            while (!stopWhile)
             {
                 // Data buffer 
                 byte[] bytes = new Byte[1024];
@@ -59,21 +59,22 @@ namespace Server
 
                 data = Encoding.ASCII.GetString(bytes,
                                             0, numByte);
-
+                Console.WriteLine(data);
                 if (data == "exit")
                 {
                     mutexGetClose.WaitOne();
                     closeAll = true;
                     mutexGetClose.ReleaseMutex();
+                    clientSocket.Send(Encoding.ASCII.GetBytes("exiting"));
                 }
                 if (!closeAll)
                 {
                     //add to the closeConnection ArrayList 0 in the index of the client. (0 means dont stop 1 means stop).
                     mutex.WaitOne();
-                    closeConnections.Add(0);
+                    closeConnections.Add(GeneralConsts.ONGOING_THREAD);
                     mutex.ReleaseMutex();
                     //just create the error for the client in case it has an error.
-                    errorList.Add("");
+                    responseList.Add(GeneralConsts.EMPTY_STRING);
                     //the number of the client is the current thread number.
                     int currentThread = threadNumber;
                     threadNumber++;
@@ -81,7 +82,7 @@ namespace Server
                     threadsData.Add(data);
                     //mutex for closeConnections.
                     mutex.WaitOne();
-                    while ((int)closeConnections[currentThread] == 0)
+                    while ((int)closeConnections[currentThread] == GeneralConsts.ONGOING_THREAD)
                     {
                         mutex.ReleaseMutex();
                         Thread.Sleep(1000);
@@ -95,7 +96,16 @@ namespace Server
 
                     //right here will be an if for close connections if it will be 1 it will take the error of the client if it will 
                     //be 2 it will take the path for the new file (will be created).
-                    byte[] message = Encoding.ASCII.GetBytes("Error - " + (string)errorList[currentThread]);
+                    byte[] message;
+                    if ((int)closeConnections[currentThread]==GeneralConsts.ERROR)
+                    {
+                        message = Encoding.ASCII.GetBytes("Error - " + (string)responseList[currentThread]);
+                    }
+                    else
+                    {
+                        message = Encoding.ASCII.GetBytes((string)responseList[currentThread]);
+                    }
+                    
                     clientSocket.Send(message);
 
                     // Close client Socket using the 
@@ -132,7 +142,7 @@ namespace Server
             // Creation TCP/IP Socket using  
             // Socket Class Costructor 
             
-            while (!closeAll)
+            while (closeAll==false)
             {
                 listener.Listen(10);
                 Console.WriteLine("Waiting connection ... ");
