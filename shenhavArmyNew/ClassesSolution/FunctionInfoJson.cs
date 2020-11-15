@@ -11,6 +11,7 @@ namespace ClassesSolution
         public string returnType;
         public string documentation;
         public int codeLength;
+        public ParametersType[] variables;
     }
     public class CodeInfoJson
     {
@@ -18,6 +19,7 @@ namespace ClassesSolution
         public int includesAmount;
         public int definesAmount;
         public Dictionary<string, string> defines;
+        public ParametersType[] Globalvariables;
     }
     public class ParametersType
     {

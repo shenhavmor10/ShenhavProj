@@ -1,13 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Collections;
 using System.Text.RegularExpressions;
-using Newtonsoft.Json;
 using ClassesSolution;
-using System.Security;
-using Server;
-using System.IO;
 using System;
-using System.Security.Cryptography;
 
 namespace testServer2
 {
@@ -248,20 +243,44 @@ namespace testServer2
         /// <param name="path"> path of the code.</param>
         /// <param name="pattern"> function pattern type string</param>
         /// <returns> return a json for the functions get in "SyncServer".</returns>
-        public static void CreateFinalJson(string filePath,Hashtable includes,Dictionary<string,string>defines, Dictionary<string, Dictionary<string, Object>>final_json)
+        public static void CreateFinalJson(string filePath,Hashtable includes,ArrayList globalVariables,Dictionary<string,ArrayList>variables,Dictionary<string,string>defines, Dictionary<string, Dictionary<string, Object>>final_json)
         {
-            CreateFunctionsJsonFile(filePath, FunctionPatternInC,final_json);
-            CreateCodeJsonFile(filePath,includes,defines,final_json);
+            CreateFunctionsJsonFile(filePath, FunctionPatternInC, variables, final_json);
+            CreateCodeJsonFile(filePath,includes,globalVariables,defines,final_json);
         }
-        
-        public static void CreateFunctionsJsonFile(string path, Regex pattern, Dictionary<string, Dictionary<string,Object>> final_json)
+        /// Function - FindVariables
+        /// <summary>
+        /// Gets an arrayList and creates "ParametersType" array and attach all values of the arrayList to it (converts it from ArrayList to
+        /// ParametersType Array).
+        /// </summary>
+        /// <param name="variables"> arrayList type "ParametersType".</param>
+        /// <returns> array type "ParametersType".</returns>
+        public static ParametersType[] FindVariables(ArrayList variables)
+        {
+            ParametersType[] parameterTypeVariables = new ParametersType[variables.Count];
+            for(int i=0;i<variables.Count;i++)
+            {
+                parameterTypeVariables[i] = (ParametersType)variables[i];
+            }
+            return parameterTypeVariables;
+        }
+        /// Fubnction - CreateFunctionsJsonFile
+        /// <summary>
+        /// function is creating the json file for the "Function" GET request.
+        /// </summary>
+        /// <param name="path"> path of the file that is being checked.</param>
+        /// <param name="pattern"></param>
+        /// <param name="variables"> Dictionary that every key on him is the function LINE and every value is an arrayList
+        /// type "ParameterType" of all of his variables.
+        /// </param>
+        /// <param name="final_json"> the final big json.</param>
+        public static void CreateFunctionsJsonFile(string path, Regex pattern, Dictionary<string,ArrayList> variables, Dictionary<string, Dictionary<string,Object>> final_json)
         {
             string codeLine = GeneralConsts.EMPTY_STRING;
             string fName;
             string[] temp;
             string returnType = GeneralConsts.EMPTY_STRING;
             bool exitFlag = false;
-            bool found;
             string firstLineDocumentation = GeneralConsts.EMPTY_STRING;
             uint curPos;
             Object tempDict = new Dictionary<string, FunctionInfoJson>();
@@ -338,6 +357,7 @@ namespace testServer2
                         ((FunctionInfoJson)tempStorage).content = FunctionCode(sr, ref codeLine);
                         ((FunctionInfoJson)tempStorage).parameters = FindParameters(fName);
                         ((FunctionInfoJson)tempStorage).returnType = returnType;
+                        ((FunctionInfoJson)tempStorage).variables = FindVariables(variables[fName]);
                         curPos = sr.Pos;
                         ((FunctionInfoJson)tempStorage).documentation = FindDocumentation(sr, documentPos, firstLineDocumentation, curPos);
                        ((Dictionary<string,FunctionInfoJson>)tempDict).Add(fName, (FunctionInfoJson)tempStorage);
@@ -364,7 +384,7 @@ namespace testServer2
         /// <param name="defines"> Dictionary of defines that has all defines in the code. 
         ///                        (Including all imports defines.)</param>
         /// <returns> returns a json file type string.</returns>
-        public static void CreateCodeJsonFile(string path,Hashtable includes,Dictionary<string,string>defines, Dictionary<string, Dictionary<string, Object>> final_json)
+        public static void CreateCodeJsonFile(string path,Hashtable includes,ArrayList globalVariables,Dictionary<string,string>defines, Dictionary<string, Dictionary<string, Object>> final_json)
         {
             CodeInfoJson code=new CodeInfoJson();
             code.includes = new string[includes.Values.Count];
@@ -372,9 +392,11 @@ namespace testServer2
             code.includesAmount = includes.Values.Count;
             code.defines = defines;
             code.definesAmount = defines.Count;
+            code.Globalvariables = FindVariables(globalVariables);
             //Serialize.
             final_json[path].Add("codeInfo",code);
 
         }
+
     }
 }

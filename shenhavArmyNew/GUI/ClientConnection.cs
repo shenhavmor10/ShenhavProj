@@ -1,10 +1,8 @@
 ﻿// A C# program for Client 
 using System;
-using System.Deployment.Internal;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Windows;
 
 namespace GUI
 {

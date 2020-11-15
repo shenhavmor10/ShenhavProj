@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Server;
-using Newtonsoft.Json;
 using ClassesSolution;
 using System.Threading.Tasks;
 using System.Diagnostics;
-using System.Linq;
-using Microsoft.SqlServer.Server;
+using Newtonsoft.Json;
 
 namespace testServer2
 {
@@ -60,18 +57,22 @@ namespace testServer2
             Hashtable keywords = new Hashtable();
             Hashtable includes = new Hashtable();
             Dictionary<string, string> defines = new Dictionary<string, string>();
+            Dictionary<string, ArrayList> funcVariables = new Dictionary<string, ArrayList>();
+            ArrayList globalVariable = new ArrayList();
             Console.WriteLine(filePath);
             //initialize 
             GeneralCompilerFunctions.initializeKeywordsAndSyntext(ansiCFile, filePath, CSyntextFile, ignoreVariablesTypesPath, keywords, includes, defines, pathes);
             Console.WriteLine(keywords.Count);
             //Syntax Check.
-            compileError=GeneralCompilerFunctions.SyntaxCheck(filePath, keywords,threadNumber);
+            compileError=GeneralCompilerFunctions.SyntaxCheck(filePath, globalVariable, keywords,funcVariables,threadNumber);
             if(!compileError)
             {
                 GeneralCompilerFunctions.printArrayList(keywords);
                 Console.WriteLine(keywords.Count);
                 //just tests.
-                GeneralRestApiServerMethods.CreateFinalJson(filePath, includes, defines, final_json);
+                GeneralRestApiServerMethods.CreateFinalJson(filePath, includes,globalVariable, funcVariables, defines, final_json);
+                string dataJson = JsonConvert.SerializeObject(final_json[filePath]["codeInfo"]);
+                Console.WriteLine("new json "+dataJson);
                 Thread threadOpenTools = new Thread(() => RunAllTasks(filePath, destPath, tools));
                 threadOpenTools.Start();
                 threadOpenTools.Join();
@@ -79,18 +80,35 @@ namespace testServer2
 
             }
         }
+        /// Function - RunAllTasks
+        /// <summary>
+        /// runs all tools picked by the client by the order.
+        /// </summary>
+        /// <param name="filePath"> the path of the file.</param>
+        /// <param name="destPath"> the path of the destionation.</param>
+        /// <param name="tools"> The array of the tools sorted from low to high priority.</param>
         public static void RunAllTasks(string filePath,string destPath,ArrayList tools)
         {
+            //runs on all tools recieved and adds to them .exe
             for (int i = START_INDEX_OF_TOOLS; i < tools.Count; i++)
             {
                 tools[i] = toolExeFolder + "\\" + tools[i] + ".exe";
                 Console.WriteLine(toolExeFolder + "\\" + tools[i] + ".exe");
             }
+            //runs the tools one by one.
             for (int i= START_INDEX_OF_TOOLS; i<tools.Count;i++)
             {
                 RunProcessAsync((string)tools[i],filePath,destPath);
             }
         }
+        /// Function - RunProcessAsync
+        /// <summary>
+        /// starts a tool (task) and sends him 2 parameters src path and dest path.
+        /// </summary>
+        /// <param name="fileName"> name of the file.</param>
+        /// <param name="srcPath"> the source path of the file</param>
+        /// <param name="destPath"> the destination of the new file.</param>
+        /// <returns></returns>
         public static Task<int> RunProcessAsync(string fileName,string srcPath,string destPath)
         {
             var tcs = new TaskCompletionSource<int>();

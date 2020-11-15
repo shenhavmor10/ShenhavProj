@@ -1,17 +1,13 @@
-﻿
-using System.Text;
+﻿using System.Text;
 using System.Threading;
 using System.Text.RegularExpressions;
 using System.Collections;
 using System;
-using System.Security.Policy;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Security;
-using System.ComponentModel;
-using System.Linq;
 using ClassesSolution;
+using Server;
+
 namespace testServer2
 {
     public class GeneralCompilerFunctions
@@ -256,7 +252,7 @@ namespace testServer2
         ///                        outside a scope.</param>
         /// <param name="sr"> buffer type MyStream.</param>
         /// <returns></returns>
-        public static bool VariableDeclarationHandler(ref string codeLine,ref int pos,Hashtable keywords,int threadNumber, ArrayList blocksAndNames,bool IsScope,MyStream sr)
+        public static bool VariableDeclarationHandler(ref string codeLine,ref int pos,Hashtable keywords,int threadNumber,ArrayList variables,ArrayList globalVariables, ArrayList blocksAndNames,bool IsScope,MyStream sr)
         {
             bool DifferentTypes = true;
             int loopCount;
@@ -312,6 +308,19 @@ namespace testServer2
             else
             {
                 ((ArrayList)blocksAndNames[blocksAndNames.Count - 1]).Add(new ParametersType(name, parameterType));
+                variables.Add(new ParametersType(name, parameterType));
+                if(!IsScope)
+                {
+                    try
+                    {
+                        globalVariables.Add(new ParametersType(name, parameterType));
+                    }
+                    catch
+                    {
+                        ConnectionServer.CloseConnection(threadNumber, ("you have used the same name for multiple variables in row " + sr.curRow + ". name - " + name), GeneralConsts.ERROR);
+                    }
+                    
+                }
             }
             //if the declaration is also a equation.
             if(VariableEquation.IsMatch(codeLine))
@@ -400,7 +409,7 @@ namespace testServer2
         /// <param name="blocksAndNames"> blocksAndNames type ArrayList that conatins the code variables in the scope.</param>
         /// <param name="parameters"> parameters type ArrayList conatins the function parameters.</param>
         /// <param name="functionLength"> scopeLength type int default is 0 if the code line is outside any scopes.</param>
-        public static void ChecksInSyntaxCheck(MyStream sr,string codeLine, bool IsScope, Hashtable keywords,int threadNumber,ArrayList blocksAndNames,ArrayList parameters=null, int functionLength = 0)
+        public static void ChecksInSyntaxCheck(MyStream sr,string codeLine, bool IsScope, Hashtable keywords,int threadNumber,ArrayList variables,ArrayList globalVariables,ArrayList blocksAndNames,ArrayList parameters=null, int functionLength = 0)
         {
             //adds the parameters of the function to the current ArrayList of variables.
             if(parameters!=null)
@@ -436,7 +445,7 @@ namespace testServer2
                 }
                 if (VariableDecleration.IsMatch(codeLine) && !(codeLine.IndexOf("typedef") != GeneralConsts.NOT_FOUND_STRING))
                 {
-                    keywordCheck = VariableDeclarationHandler(ref codeLine, ref pos, keywords,threadNumber, blocksAndNames, IsScope, sr);
+                    keywordCheck = VariableDeclarationHandler(ref codeLine, ref pos, keywords,threadNumber,variables,globalVariables, blocksAndNames, IsScope, sr);
                 }
                 else if(VariableEquation.IsMatch(codeLine))
                 {
@@ -509,7 +518,7 @@ namespace testServer2
         /// </summary>
         /// <param name="path"> The path of the c code type string.</param>
         /// <param name="keywords"> keywords type Hashtable that conatins the code keywords.</param>
-        public static bool SyntaxCheck(string path, Hashtable keywords,int threadNumber)
+        public static bool SyntaxCheck(string path,ArrayList globalVariable, Hashtable keywords,Dictionary<string,ArrayList> funcVariables,int threadNumber)
         {
             MyStream sr=null;
             try
@@ -525,10 +534,12 @@ namespace testServer2
                 //in order to delete struct keywords when they come in a function at the end of the function.
                 ArrayList parameters = new ArrayList();
                 ArrayList blocksAndNames = new ArrayList();
+                ArrayList variables = new ArrayList();
                 //adds an ArrayList inside blocksAndNames ArrayList for the action outside the scopes.
                 blocksAndNames.Add(new ArrayList());
                 string codeLine;
                 int scopeLength = 0;
+                string lastFuncLine = "";
                 while ((codeLine = sr.ReadLine()) != null && !CompileError)
                 {
                     scopeLength = 0;
@@ -536,22 +547,33 @@ namespace testServer2
                     if (OpenBlockPattern.IsMatch(codeLine))
                     {
                         NextScopeLength(sr, ref codeLine, ref scopeLength, true);
-                        ChecksInSyntaxCheck(sr, codeLine, true, keywords, threadNumber, blocksAndNames, parameters, scopeLength + 1);
+                        ChecksInSyntaxCheck(sr, codeLine, true, keywords, threadNumber,variables, globalVariable, blocksAndNames, parameters, scopeLength + 1);
                         parameters.Clear();
                     }
                     // if there is a function it saves its parameters.
                     else if (FunctionPatternInC.IsMatch(codeLine))
                     {
                         parameters.AddRange(GeneralRestApiServerMethods.FindParameters(codeLine));
+                        if(lastFuncLine!="")
+                        {
+                            funcVariables.Add(lastFuncLine, new ArrayList(variables));
+                            variables.Clear();
+                        }
+                        lastFuncLine = codeLine;
                     }
                     //handling outside the scopes.
                     else
                     {
-                        ChecksInSyntaxCheck(sr, codeLine, false, keywords, threadNumber, blocksAndNames);
+                        ChecksInSyntaxCheck(sr, codeLine, false, keywords, threadNumber,variables, globalVariable, blocksAndNames);
                     }
 
                 }
-                
+                if (lastFuncLine != "")
+                {
+                    funcVariables.Add(lastFuncLine, new ArrayList(variables));
+                    variables.Clear();
+                }
+
             }
             return CompileError;
 

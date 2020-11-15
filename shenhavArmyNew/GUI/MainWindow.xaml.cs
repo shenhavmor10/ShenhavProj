@@ -1,28 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.ComponentModel;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Windows.Forms;
-using Ookii.Dialogs.Wpf;
-using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 using System.Data.SqlClient;
-using System.Data;
-using System.Drawing;
-using System.Windows.Markup;
 using ClassesSolution;
+using System.Collections;
 
 namespace GUI
 {
@@ -36,6 +19,7 @@ namespace GUI
         const int FirstThread = 0;
         const int SecondThread = 1;
         static int threadNumber = 0;
+        static ArrayList exeNames = new ArrayList();
         internal static MainWindow main;
         public MainWindow()
         {
@@ -45,13 +29,14 @@ namespace GUI
             string connectionString = "Data Source=E560-02\\SQLEXPRESS;Initial Catalog=ToolsDB;User ID=shenhav;Password=1234";
             cnn = new SqlConnection(connectionString);
             cnn.Open();
-            SqlCommand command = new SqlCommand("Select tool_name,tool_desc,tool_exe_name from tools_table", cnn);
+            SqlCommand command = new SqlCommand("Select tool_name,tool_desc,tool_exe_name from tools_table ORDER BY tool_priority ASC;", cnn);
             using (SqlDataReader reader = command.ExecuteReader())
             {
                 while (reader.Read())
                 {
                     CheckBox temp = new CheckBox();
-                    temp.Content= reader["tool_exe_name"].ToString();
+                    temp.Content= reader["tool_name"].ToString();
+                    exeNames.Add(reader["tool_exe_name"].ToString());
                     StackPanelCheckBox.Children.Add(temp);
                 }
             }
@@ -95,11 +80,12 @@ namespace GUI
 
             }
             string tools = GeneralConsts.EMPTY_STRING;
+            int i = 0;
             foreach(CheckBox tool in StackPanelCheckBox.Children)
             {
                 if(tool.IsChecked==true)
                 {
-                    tools += "," + tool.Content;
+                    tools += "," + exeNames[i++];
                 }
             }
             if(tools!= GeneralConsts.EMPTY_STRING)

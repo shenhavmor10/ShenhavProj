@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Net;
 using System.Threading.Tasks;
-using System.Net.Sockets;
 using System.Net.Http;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
