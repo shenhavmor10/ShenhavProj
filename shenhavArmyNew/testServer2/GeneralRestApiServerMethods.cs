@@ -397,6 +397,71 @@ namespace testServer2
             final_json[path].Add("codeInfo",code);
 
         }
+        public static string ReadAllScope(MyStream sr,uint pos,string line)
+        {
+            string result = "";
+            if (pos==0)
+            {
+                result = line;
+            }
+            else
+            {
+                sr.Seek(pos);
+                result = line+"\n\r"+FunctionCode(sr, ref line);
+            }
+            return result;
+        }
+        public static string [] SearchPattern(Regex Pattern,string returnSize,string filePath)
+        {
+
+            ArrayList results = new ArrayList();
+            MyStream sr = new MyStream(filePath, System.Text.Encoding.UTF8);
+            uint pos=sr.Pos;
+            Stack s = new Stack();
+            string blockLine="";
+            bool modelStopWhile = false;
+            string codeLine;
+            while((codeLine = sr.ReadLine())!=null && !modelStopWhile)
+            {
+                if (codeLine.IndexOf("{") != GeneralConsts.NOT_FOUND_STRING)
+                {
+                    pos = sr.Pos;
+                    blockLine = codeLine;
+                    s.Push(codeLine);
+                }
+                if (codeLine.IndexOf("}") != GeneralConsts.NOT_FOUND_STRING)
+                {
+                    s.Pop();
+                }
+                if (Pattern.IsMatch(codeLine))
+                {
+                    if(returnSize=="model")
+                    {
+                        modelStopWhile = true;
+                        sr.Seek(0);
+                        results.Add(sr.ReadToEnd());
+                    }
+                    else if(returnSize=="scope")
+                    {
+                        if(s.Count==0)
+                        {
+                            pos = 0;
+                        }
+                        if(!results.Contains(ReadAllScope(sr,pos, blockLine)))
+                        {
+                            results.Add(ReadAllScope(sr, pos, blockLine));
+                        }
+                    }
+                    else if(returnSize=="line")
+                    {
+                        results.Add(codeLine);
+                    }
+                }
+                
+            }
+            string[] finalResult = (string[])results.ToArray(typeof(string));
+            return finalResult;
+        }
 
     }
 }

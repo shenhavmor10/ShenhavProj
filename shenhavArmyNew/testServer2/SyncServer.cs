@@ -52,27 +52,40 @@ namespace testServer2
                     //All GET commands.
                     if (context.Request.HttpMethod == "GET")
                     {
-                        path = context.Request.RawUrl;
-                        path = path.Trim(trimChars);
-                        path = path.Split('?')[0];
-                        Console.WriteLine(path);
-                        Console.WriteLine(path);
-                        //switch case for get commands.
-                        switch (path)
+                        if(context.Request.QueryString["pattern"]!=null)
                         {
-                            case "functions":
-                                Console.WriteLine("dddd");
-                                dataJson = JsonConvert.SerializeObject(final_json[filePath]["function"]);
-                                Console.WriteLine(dataJson);
-                                break;
-                            case "codeInfo":
-                                dataJson = JsonConvert.SerializeObject(final_json[filePath]["codeInfo"]);
-                                Console.WriteLine(dataJson);
-                                break;
-                            default:
-                                Console.WriteLine();
-                                break;
+                            Console.WriteLine(context.Request.QueryString["pattern"]);
+                            Console.WriteLine(context.Request.QueryString["returnSize"]);
+                            Regex r = new Regex(context.Request.QueryString["pattern"]);
+                            string retrunSize = context.Request.QueryString["returnSize"];
+                            string [] result=GeneralRestApiServerMethods.SearchPattern(r, retrunSize, filePath);
+                            dataJson = JsonConvert.SerializeObject(result);
+                            Console.WriteLine(dataJson);
+                        }
+                        else
+                        {
+                            path = context.Request.RawUrl;
+                            path = path.Trim(trimChars);
+                            path = path.Split('?')[0];
+                            Console.WriteLine(path);
+                            Console.WriteLine(path);
+                            //switch case for get commands.
+                            switch (path)
+                            {
+                                case "functions":
+                                    Console.WriteLine("dddd");
+                                    dataJson = JsonConvert.SerializeObject(final_json[filePath]["function"]);
+                                    Console.WriteLine(dataJson);
+                                    break;
+                                case "codeInfo":
+                                    dataJson = JsonConvert.SerializeObject(final_json[filePath]["codeInfo"]);
+                                    Console.WriteLine(dataJson);
+                                    break;
+                                default:
+                                    Console.WriteLine();
+                                    break;
 
+                            }
                         }
                         var bytes = Encoding.UTF8.GetBytes(dataJson);
                         Stream OutputStream = context.Response.OutputStream;
