@@ -112,7 +112,7 @@ namespace testServer2
         /// <param name="a"> Hashtable </param>
         /// <param name="codeLine"> string </param>
         /// <returns> returns if the string is in the hash type bool</returns>
-        public static bool CheckIfStringInHash(Hashtable a, string codeLine)
+        static bool CheckIfStringInHash(Hashtable a, string codeLine)
         {
             bool foundString = false;
             string result = codeLine.Trim(CharsToTrim);
@@ -160,7 +160,7 @@ namespace testServer2
         /// </summary>
         /// <param name="codeLine"> variable declaration line type string.</param>
         /// <returns> returns type int word count.</returns>
-        public static int KeywordsAmountOnVariableDeclaration(string codeLine)
+        static int KeywordsAmountOnVariableDeclaration(string codeLine)
         {
             int count = 0;
             int pos = codeLine.IndexOf(GeneralConsts.SPACEBAR);
@@ -207,7 +207,7 @@ namespace testServer2
         /// </summary>
         /// <param name="line"> Code line type string.</param>
         /// <returns> returns type - ParametersType the variable that was being declared.</returns>
-        public static ParametersType GetParameterNameFromLine(string line)
+        static ParametersType GetParameterNameFromLine(string line)
         {
             string name;
             string type=line;
@@ -252,7 +252,7 @@ namespace testServer2
         ///                        outside a scope.</param>
         /// <param name="sr"> buffer type MyStream.</param>
         /// <returns></returns>
-        public static bool VariableDeclarationHandler(ref string codeLine,ref int pos,Hashtable keywords,int threadNumber,ArrayList variables,ArrayList globalVariables, ArrayList blocksAndNames,bool IsScope,MyStream sr)
+        static bool VariableDeclarationHandler(ref string codeLine,ref int pos,Hashtable keywords,int threadNumber,ArrayList variables,ArrayList globalVariables, ArrayList blocksAndNames,bool IsScope,MyStream sr)
         {
             bool DifferentTypes = true;
             int loopCount;
@@ -342,7 +342,7 @@ namespace testServer2
         /// <param name="blocksAndNames"> ArrayList type.</param>
         /// <param name="name"> the name to get the whole node from.</param>
         /// <returns> returns parameterType type of the node named like "name".</returns>
-        public static ParametersType GetVariableTypeParameterFromArrayList(ArrayList blocksAndNames,string name)
+        static ParametersType GetVariableTypeParameterFromArrayList(ArrayList blocksAndNames,string name)
         {
             bool endLoop = false;
             ParametersType result =null;
@@ -365,7 +365,7 @@ namespace testServer2
         /// <param name="codeLine"> the code line type string.</param>
         /// <param name="blocksAndNames"> ArrayList of variables.</param>
         /// <returns>returns if the variable equation is good.</returns>
-        public static bool VariableEquationHandler(MyStream sr,string codeLine, ArrayList blocksAndNames,int threadNumber)
+        static bool VariableEquationHandler(MyStream sr,string codeLine, ArrayList blocksAndNames,int threadNumber)
         {
             char[] trimChars = { '\t', ' '};
             bool isSameType = true;
@@ -409,7 +409,7 @@ namespace testServer2
         /// <param name="blocksAndNames"> blocksAndNames type ArrayList that conatins the code variables in the scope.</param>
         /// <param name="parameters"> parameters type ArrayList conatins the function parameters.</param>
         /// <param name="functionLength"> scopeLength type int default is 0 if the code line is outside any scopes.</param>
-        public static void ChecksInSyntaxCheck(MyStream sr,string codeLine, bool IsScope, Hashtable keywords,int threadNumber,ArrayList variables,ArrayList globalVariables,ArrayList blocksAndNames,ArrayList parameters=null, int functionLength = 0)
+        static void ChecksInSyntaxCheck(MyStream sr,string codeLine, bool IsScope, Hashtable keywords,int threadNumber,ArrayList variables,ArrayList globalVariables,ArrayList blocksAndNames,ArrayList parameters=null, int functionLength = 0)
         {
             //adds the parameters of the function to the current ArrayList of variables.
             if(parameters!=null)
@@ -456,8 +456,15 @@ namespace testServer2
                 if (!keywordCheck)
                 {
                     string error=(codeLine + " keyword does not exist. row : "+sr.curRow);
-                    Console.WriteLine(sr.curRow);
-                    Console.WriteLine(error);
+                    try
+                    {
+                        MainProgram.AddToLogString(sr.curRow.ToString());
+                    }
+                    catch(Exception e)
+                    {
+                        MainProgram.AddToLogString(e.ToString());
+                    }
+                    MainProgram.AddToLogString(error);
                     Server.ConnectionServer.CloseConnection(threadNumber, error, GeneralConsts.ERROR);
                     CompileError = true;
 
@@ -596,7 +603,7 @@ namespace testServer2
             }
             catch(Exception e)
             {
-                Console.WriteLine(e);
+                MainProgram.AddToLogString(e.ToString());
             }
             string line = sr.ReadLine();
             string[] keysArr = Regex.Split(line, splitBy);
@@ -620,7 +627,7 @@ namespace testServer2
         /// <param name="includes"> Hashtable to store the includes.</param>
         /// <param name="defines"> Dictionary to store the defines . (key - new keyword, value - old Definition)</param>
         /// <param name="pathes"> Paths for all the places where the imports might be.</param>
-        public static void PreprocessorActions(string path, int threadNumber, Hashtable keywords, Hashtable includes,Dictionary<string,string> defines,string [] pathes)
+        static void PreprocessorActions(string path, int threadNumber, Hashtable keywords, Hashtable includes,Dictionary<string,string> defines,string [] pathes)
         {
             bool endLoop = false;
             MyStream sr = null;
@@ -631,7 +638,7 @@ namespace testServer2
             }
             catch (Exception e)
             {
-                Console.WriteLine("{0} Second exception caught.", e);
+                MainProgram.AddToLogString(String.Format("{0} Second exception caught.", e.ToString()));
                 Server.ConnectionServer.CloseConnection(threadNumber, FILE_NOT_FOUND, GeneralConsts.ERROR);
                 endLoop = true;
             }
@@ -697,7 +704,7 @@ namespace testServer2
                                 {
                                     keywords.Add(CreateMD5(newKeyword), newKeyword);
                                     defines.Add(newKeyword, defineOriginalWord);
-                                    Console.WriteLine("new Keywords :" + newkeyWords[0]);
+                                    MainProgram.AddToLogString("new Keywords :" + newkeyWords[0]);
                                 }
                             }
                         }
@@ -714,7 +721,7 @@ namespace testServer2
                             {
                                 keywords.Add(CreateMD5(newKeyword), newKeyword);
                                 defines.Add(newKeyword, defineOriginalWord);
-                                Console.WriteLine("new : "+newKeyword);
+                                MainProgram.AddToLogString("new : "+newKeyword);
                             }
                         }
                     }
@@ -743,7 +750,7 @@ namespace testServer2
                     {
                         result = CutBetween2Strings(codeLine, "\"", "\"");
                     }
-                    Console.WriteLine(result);
+                    MainProgram.AddToLogString(result);
                     //only enters an include if it didnt already included him.
                     if (!includes.Contains(CreateMD5(result)))
                     {
@@ -772,8 +779,8 @@ namespace testServer2
                             preprocessorThread = new Thread(() => PreprocessorActions(currentPath+"\\" + result, threadNumber + 1, keywords, includes,defines, pathes));
                         }
                         preprocessorThread.Start();
-                        preprocessorThread.Join();
-                        Console.WriteLine("thread " + threadNumber + "stopped");
+                        preprocessorThread.Join(GeneralConsts.TIMEOUT_JOIN);
+                        MainProgram.AddToLogString("thread " + threadNumber + "stopped");
                     }
                 }
 
@@ -807,7 +814,7 @@ namespace testServer2
         /// <param name="s"> struct first line</param>
         /// <param name="keywords"> Hashtable to store the keywords.</param>
         /// <returns> returns an ArrayList with the keywords.</returns>
-        public static ArrayList AddStructNames(MyStream sr, string codeLine, Hashtable keywords)
+        static ArrayList AddStructNames(MyStream sr, string codeLine, Hashtable keywords)
         {
             ArrayList results = new ArrayList();
             int count = 0;
@@ -885,7 +892,7 @@ namespace testServer2
             ICollection keys = a.Keys;
             foreach (string key in keys)
             {
-                Console.WriteLine(a[key]);
+                MainProgram.AddToLogString(a[key].ToString());
             }
         }
         /// Function - AddToArrayListFromFile

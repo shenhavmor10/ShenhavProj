@@ -1,0 +1,7 @@
+VariableDecleration,,,^(?!.*return)(?=(\s)?[^\s()]+\s((\*)*(\s))?[^\s()=]+(\s?=.+;|[^()=]*;)$)
+VariableEquation,,,^(?!.*return)(?=(\s)?([^\s()]+\s)?((\*)*(\s))?[^\s()]+(\s)?=(\s)?[A-Za-z][^\s()]*;$)
+DefineDecleration,,,^(\s)?#define ([^ ]+) [^\d][^ ()]*( [^ ()]+)?$
+IncludeTrianglesPattern,,,^(\s)?#include.{0,2}<.+>$
+IncludeRegularPattern,,,^(\s)?#include\s{0,2}"".+\""$
+functionPatternInH,,,^[a-zA-Z]+.*\s[a-zA-Z].*[(].*[)]\;$
+StructPattern,,,.*struct(\s.+{$|[^\s]+$|.*{.+;$)

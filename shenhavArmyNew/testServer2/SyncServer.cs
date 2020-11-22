@@ -16,6 +16,8 @@ namespace testServer2
         static Regex FunctionPatternInC = new Regex(@"^([^ ]+\s)?[^ ]+\s(.*\s)?[^ ]+\([^()]*\)$");
         static Regex functionPatternInH = new Regex(@"^[a-zA-Z]+.*\s[a-zA-Z].*[(].*[)]\;$");
         static Regex staticFunctionPatternInC = new Regex(@"^.*static.*\s.*[a-zA-Z]+.*\s[a-zA-Z].*[(].*[)]$");
+        const string NOT_FOUND_500 = "Could not found pattern";
+        const string NOT_FOUND_404 = "Not found";
         /// Function - SyncServer
         /// <summary>
         /// Creation of the rest api server.
@@ -42,52 +44,84 @@ namespace testServer2
                     context.Response.SendChunked = true;
                     context.Response.ContentType = "application/json";
                     string dataJson = GeneralConsts.EMPTY_STRING;
-                    Console.WriteLine(context.Request.Headers);
+                    MainProgram.AddToLogString(context.Request.Headers.ToString());
                     Dictionary<string, Dictionary<string, object>> final_json = MainProgram.GetFinalJson();
                     string filePath = context.Request.QueryString["filePath"];
-                    Console.WriteLine("filePath  = "+filePath);
+                    bool not_found_pattern = false;
+                    bool not_found = false;
+                    MainProgram.AddToLogString("filePath  = "+filePath);
                     char[] trimChars = { '/', ' '};
                     int totalTime = 0;
                     string path = GeneralConsts.EMPTY_STRING;
+                    Regex r;
                     //All GET commands.
                     if (context.Request.HttpMethod == "GET")
                     {
                         if(context.Request.QueryString["pattern"]!=null)
                         {
-                            Console.WriteLine(context.Request.QueryString["pattern"]);
-                            Console.WriteLine(context.Request.QueryString["returnSize"]);
-                            Regex r = new Regex(context.Request.QueryString["pattern"]);
-                            string retrunSize = context.Request.QueryString["returnSize"];
-                            string [] result=GeneralRestApiServerMethods.SearchPattern(r, retrunSize, filePath);
+                            MainProgram.AddToLogString(context.Request.QueryString["pattern"]);
+                            MainProgram.AddToLogString(context.Request.QueryString["returnSize"]);
+                            r = new Regex(context.Request.QueryString["pattern"]);
+                            string returnSize = context.Request.QueryString["returnSize"];
+                            string [] result=GeneralRestApiServerMethods.SearchPattern(r, returnSize, filePath);
                             dataJson = JsonConvert.SerializeObject(result);
-                            Console.WriteLine(dataJson);
+                            MainProgram.AddToLogString(dataJson);
+                        }
+                        else if(context.Request.QueryString["readyPattern"] != null)
+                        {
+                            MainProgram.AddToLogString(context.Request.QueryString["readyPattern"]);
+                            MainProgram.AddToLogString(context.Request.QueryString["returnSize"]);
+                            if (GeneralRestApiServerMethods.TakePatternFromFile(context.Request.QueryString["readyPattern"]) == GeneralConsts.EMPTY_STRING)
+                                not_found_pattern = true;
+                            else
+                            {
+                                r = new Regex(GeneralRestApiServerMethods.TakePatternFromFile(context.Request.QueryString["readyPattern"]));
+                                string returnSize = context.Request.QueryString["returnSize"];
+                                string[] result = GeneralRestApiServerMethods.SearchPattern(r, returnSize, filePath);
+                                dataJson = JsonConvert.SerializeObject(result);
+                            }
                         }
                         else
                         {
                             path = context.Request.RawUrl;
                             path = path.Trim(trimChars);
                             path = path.Split('?')[0];
-                            Console.WriteLine(path);
-                            Console.WriteLine(path);
+                            MainProgram.AddToLogString(path);
                             //switch case for get commands.
                             switch (path)
                             {
                                 case "functions":
-                                    Console.WriteLine("dddd");
                                     dataJson = JsonConvert.SerializeObject(final_json[filePath]["function"]);
-                                    Console.WriteLine(dataJson);
+                                    MainProgram.AddToLogString(dataJson);
                                     break;
                                 case "codeInfo":
                                     dataJson = JsonConvert.SerializeObject(final_json[filePath]["codeInfo"]);
-                                    Console.WriteLine(dataJson);
+                                    MainProgram.AddToLogString(dataJson);
                                     break;
                                 default:
-                                    Console.WriteLine();
                                     break;
 
                             }
                         }
-                        var bytes = Encoding.UTF8.GetBytes(dataJson);
+                        byte [] bytes;
+                        if (not_found)
+                        {
+                            bytes= Encoding.UTF8.GetBytes(NOT_FOUND_500);
+                            context.Response.StatusCode = 500;
+                        }
+                        else
+                        {
+                            if (dataJson.Length < 0)
+                            {
+                                bytes = Encoding.UTF8.GetBytes(NOT_FOUND_404);
+                                context.Response.StatusCode = 404;
+                            }
+                            else
+                            {
+                                bytes = Encoding.UTF8.GetBytes(dataJson);
+                            }
+                        }
+                        
                         Stream OutputStream = context.Response.OutputStream;
                         //sends the message back.
                         OutputStream.Write(bytes, 0, bytes.Length);

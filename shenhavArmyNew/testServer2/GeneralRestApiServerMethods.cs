@@ -14,6 +14,7 @@ namespace testServer2
         static Regex OpenBlockPattern = new Regex(@".*{.*");
         static Regex CloseBlockPattern = new Regex(@".*}.*");
         static Regex FunctionPatternInC = new Regex(@"^([^ ]+\s)?[^ ]+\s(.*\s)?[^ ]+\([^()]*\)$");
+        const string patternFilePath = @"..\..\..\Patterns.txt";
 
         /// Function - FunctionCode
         /// <summary>
@@ -34,7 +35,7 @@ namespace testServer2
             while ((codeLine != null && myStack.Count > 0))
             {
                 codeLine = sr.ReadLine();
-                finalCode += codeLine + "\n\r";
+                finalCode += codeLine + GeneralConsts.NEW_LINE;
                 functionLength++;
                 if (OpenBlockPattern.IsMatch(codeLine))
                 {
@@ -125,7 +126,7 @@ namespace testServer2
         /// </summary>
         /// <param name="str"> array after split type string array.</param>
         /// <returns> returns the string that is in the second place that isnt null in the array . type string.</returns>
-        public static string takeSecondNotNullString(string[] str)
+        static string takeSecondNotNullString(string[] str)
         {
             int i;
             string result = GeneralConsts.EMPTY_STRING;
@@ -215,10 +216,10 @@ namespace testServer2
         /// <returns> returns the documentation of the function included.</returns>
         public static string FindDocumentation(MyStream sr, uint documentation, string firstLineDocumentation, uint functionPos)
         {
-            string documetationString = firstLineDocumentation + "\n\r";
+            string documetationString = firstLineDocumentation + GeneralConsts.NEW_LINE;
             sr.Seek(documentation);
             string codeLine = sr.ReadLine();
-            documetationString += codeLine + "\n\r";
+            documetationString += codeLine + GeneralConsts.NEW_LINE;
             if (!(firstLineDocumentation.IndexOf("//") != NOT_FOUND_STRING) && !(firstLineDocumentation.IndexOf("/*") != NOT_FOUND_STRING))
             {
                 documetationString = GeneralConsts.EMPTY_STRING;
@@ -228,7 +229,7 @@ namespace testServer2
                 while (!(codeLine.IndexOf("*/") != NOT_FOUND_STRING))
                 {
                     codeLine = sr.ReadLine();
-                    documetationString += codeLine + "\n\r";
+                    documetationString += codeLine + GeneralConsts.NEW_LINE;
                 }
 
             }
@@ -274,7 +275,7 @@ namespace testServer2
         /// type "ParameterType" of all of his variables.
         /// </param>
         /// <param name="final_json"> the final big json.</param>
-        public static void CreateFunctionsJsonFile(string path, Regex pattern, Dictionary<string,ArrayList> variables, Dictionary<string, Dictionary<string,Object>> final_json)
+        static void CreateFunctionsJsonFile(string path, Regex pattern, Dictionary<string,ArrayList> variables, Dictionary<string, Dictionary<string,Object>> final_json)
         {
             string codeLine = GeneralConsts.EMPTY_STRING;
             string fName;
@@ -384,7 +385,7 @@ namespace testServer2
         /// <param name="defines"> Dictionary of defines that has all defines in the code. 
         ///                        (Including all imports defines.)</param>
         /// <returns> returns a json file type string.</returns>
-        public static void CreateCodeJsonFile(string path,Hashtable includes,ArrayList globalVariables,Dictionary<string,string>defines, Dictionary<string, Dictionary<string, Object>> final_json)
+        static void CreateCodeJsonFile(string path,Hashtable includes,ArrayList globalVariables,Dictionary<string,string>defines, Dictionary<string, Dictionary<string, Object>> final_json)
         {
             CodeInfoJson code=new CodeInfoJson();
             code.includes = new string[includes.Values.Count];
@@ -397,6 +398,14 @@ namespace testServer2
             final_json[path].Add("codeInfo",code);
 
         }
+        /// Function - ReadAllScope
+        /// <summary>
+        /// reads all of the scope that the code line is in.
+        /// </summary>
+        /// <param name="sr"> buffer type MyStream.</param>
+        /// <param name="pos"> position of the line type uint.</param>
+        /// <param name="line"> code line type string.</param>
+        /// <returns> the string of all the scope.</returns>
         public static string ReadAllScope(MyStream sr,uint pos,string line)
         {
             string result = "";
@@ -407,10 +416,18 @@ namespace testServer2
             else
             {
                 sr.Seek(pos);
-                result = line+"\n\r"+FunctionCode(sr, ref line);
+                result = line+GeneralConsts.NEW_LINE+FunctionCode(sr, ref line);
             }
             return result;
         }
+        /// Function - SearchPattern
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Pattern"> The pattern that it search type Regex.</param>
+        /// <param name="returnSize"> size of the return code.</param>
+        /// <param name="filePath"> the path of the file type string.</param>
+        /// <returns> An array of strings that contains all of the code that matches the patterns.</returns>
         public static string [] SearchPattern(Regex Pattern,string returnSize,string filePath)
         {
 
@@ -461,6 +478,30 @@ namespace testServer2
             }
             string[] finalResult = (string[])results.ToArray(typeof(string));
             return finalResult;
+        }
+        /// Function - TakePatternFromFile
+        /// <summary>
+        /// Search for the pattern in the patterns file and returns it.
+        /// </summary>
+        /// <param name="pattern"> name of the pattern the tool requested.</param>
+        /// <returns> pattern type string.</returns>
+        public static string TakePatternFromFile(string pattern)
+        {
+            bool found = false;
+            MyStream sr = new MyStream(patternFilePath, System.Text.Encoding.UTF8);
+            string line;
+            string final_pattern=GeneralConsts.EMPTY_STRING;
+            string[] split = { ",,," };
+            while((line=sr.ReadLine())!=null&&!found)
+            {
+                if(line.Split(split, System.StringSplitOptions.None)[0]==pattern)
+                {
+                    final_pattern = line.Split(split, System.StringSplitOptions.None)[1];
+                    found = true;
+                }
+
+            }
+            return final_pattern;
         }
 
     }

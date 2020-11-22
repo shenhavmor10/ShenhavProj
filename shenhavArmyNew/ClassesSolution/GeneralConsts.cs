@@ -17,5 +17,7 @@ namespace ClassesSolution
         public const int ONGOING_THREAD = 0;
         public const int ERROR = 1;
         public const int FINISHED_SUCCESFULLY = 2;
+        public const int TIMEOUT_JOIN = 20000;
+        public const string NEW_LINE = "\n\r";
     }
 }

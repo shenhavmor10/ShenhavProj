@@ -45,10 +45,8 @@ namespace Client
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             //Functions GET.
             Console.WriteLine("before async");
-            string s = @"^(?!.*return)(?=(\s)?in[^\s()]+\s((\*)*(\s))?[^\s()=]+(\s?=.+;|[^()=]*;)$)";
-            Console.WriteLine(s);
             
-            HttpResponseMessage response = await client.GetAsync(string.Format("http://127.0.0.1:8081?filePath={0}&pattern={1}&returnSize={2}", sourcePath, System.Net.WebUtility.UrlEncode(s), "scope"));
+            HttpResponseMessage response = await client.GetAsync(string.Format("http://127.0.0.1:8081?filePath={0}&readyPattern={1}&returnSize={2}", sourcePath, "StructPattern", "scope"));
             //HttpResponseMessage response = await client.GetAsync(string.Format("http://127.0.0.1:8081/functions?filePath={0}",sourcePath);
             Console.WriteLine("after async");
             response.EnsureSuccessStatusCode();
@@ -57,6 +55,7 @@ namespace Client
             //Dictionary<string, FunctionInfoJson> dict = JsonConvert.DeserializeObject<Dictionary<string, FunctionInfoJson>>(responseBody);
             string[] arr = JsonConvert.DeserializeObject<string[]>(responseBody);
             Console.WriteLine(arr[0]);
+            Console.Read();
             //Checking if it works (it does).
             /*Console.WriteLine(dict["static int* main(int* podd, int** odpdf, char a, char* retval)"].documentation);
             string documentationTemplate = new MyStream(documentationPath, System.Text.Encoding.UTF8).ReadToEnd();

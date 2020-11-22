@@ -8,6 +8,7 @@ using ClassesSolution;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using Newtonsoft.Json;
+using System.IO;
 
 namespace testServer2
 {
@@ -26,7 +27,11 @@ namespace testServer2
         //static string filePath = @"C:\Users\Shenhav\Desktop\Check\checkOne.c";
         const string ansiCFile = @"..\..\..\Ansikeywords.txt";
         const string CSyntextFile = @"..\..\..\CSyntext.txt";
+        const string logFile = @"..\..\..\LogFile.txt";
         const string FINISH_SUCCESFULL = "Finished succesfully code is ready at the destination path.";
+        
+        const int TIMEOUT_SLEEP = 1000;
+        static string logs = GeneralConsts.EMPTY_STRING;
         static bool compileError = false;
         static ArrayList currentDataList = new ArrayList();
         static int threadNumber = 0;
@@ -39,11 +44,22 @@ namespace testServer2
         /// Function - GetFinalJson
         /// <summary>
         /// Function returns the final json.
+        /// final json is the json that is being created after the compilation checks, this json contains
+        /// all information of the code and the rest api is prasing the information to the GET requests.
         /// </summary>
         /// <returns>final json type Dictionary<string,Dictionary<string,Object>> </returns>
         public static Dictionary<string,Dictionary<string,Object>> GetFinalJson()
         {
             return final_json;
+        }
+        /// Function - AddToLogString
+        /// <summary>
+        /// logs is the string that saves all logs and at the end it writes it to the logs txt.
+        /// </summary>
+        /// <param name="content">what you add to the string</param>
+        public static void AddToLogString(string content)
+        {
+            logs += content + GeneralConsts.NEW_LINE;
         }
         /// Function - RunAllChecks
         /// <summary>
@@ -51,7 +67,7 @@ namespace testServer2
         /// </summary>
         /// <param name="filePath"></param>
         /// <param name="pathes"></param>
-        public static void RunAllChecks(string filePath,string destPath, string [] pathes,ArrayList tools)
+        static void RunAllChecks(string filePath,string destPath, string [] pathes,ArrayList tools)
         {
             //variable declaration.
             Hashtable keywords = new Hashtable();
@@ -59,26 +75,54 @@ namespace testServer2
             Dictionary<string, string> defines = new Dictionary<string, string>();
             Dictionary<string, ArrayList> funcVariables = new Dictionary<string, ArrayList>();
             ArrayList globalVariable = new ArrayList();
-            Console.WriteLine(filePath);
             //initialize 
-            GeneralCompilerFunctions.initializeKeywordsAndSyntext(ansiCFile, filePath, CSyntextFile, ignoreVariablesTypesPath, keywords, includes, defines, pathes);
-            Console.WriteLine(keywords.Count);
+            try
+            {
+                GeneralCompilerFunctions.initializeKeywordsAndSyntext(ansiCFile, filePath, CSyntextFile, ignoreVariablesTypesPath, keywords, includes, defines, pathes);
+            }
+            catch(Exception e)
+            {
+                AddToLogString("ERROR IN PREPROCESSOR");
+                ConnectionServer.CloseConnection(threadNumber,"ERROR IN PREPROCESSOR "+e.ToString() , GeneralConsts.ERROR);
+
+            }
+            
+            AddToLogString(keywords.Count.ToString());
             //Syntax Check.
-            compileError=GeneralCompilerFunctions.SyntaxCheck(filePath, globalVariable, keywords,funcVariables,threadNumber);
+            try
+            {
+                compileError = GeneralCompilerFunctions.SyntaxCheck(filePath, globalVariable, keywords, funcVariables, threadNumber);
+            }
+            catch(Exception e)
+            {
+                AddToLogString("ERROR IN SyntaxCheck");
+                ConnectionServer.CloseConnection(threadNumber, "ERROR IN SyntaxCheck " + e.ToString(), GeneralConsts.ERROR);
+            }
+            
             if(!compileError)
             {
                 GeneralCompilerFunctions.printArrayList(keywords);
-                Console.WriteLine(keywords.Count);
+                AddToLogString(keywords.Count.ToString());
                 //just tests.
-                GeneralRestApiServerMethods.CreateFinalJson(filePath, includes,globalVariable, funcVariables, defines, final_json);
+                try
+                {
+                    GeneralRestApiServerMethods.CreateFinalJson(filePath, includes, globalVariable, funcVariables, defines, final_json);
+                }
+                catch (Exception e)
+                {
+                    AddToLogString("ERROR Creating final json");
+                    ConnectionServer.CloseConnection(threadNumber, "ERROR Creating final json " + e.ToString(), GeneralConsts.ERROR);
+                }
+               
                 string dataJson = JsonConvert.SerializeObject(final_json[filePath]["codeInfo"]);
-                Console.WriteLine("new json "+dataJson);
+                AddToLogString("new json "+dataJson);
                 Thread threadOpenTools = new Thread(() => RunAllTasks(filePath, destPath, tools));
                 threadOpenTools.Start();
-                threadOpenTools.Join();
+                threadOpenTools.Join(GeneralConsts.TIMEOUT_JOIN);
                 ConnectionServer.CloseConnection(threadNumber, FINISH_SUCCESFULL,GeneralConsts.FINISHED_SUCCESFULLY);
 
             }
+
         }
         /// Function - RunAllTasks
         /// <summary>
@@ -87,13 +131,12 @@ namespace testServer2
         /// <param name="filePath"> the path of the file.</param>
         /// <param name="destPath"> the path of the destionation.</param>
         /// <param name="tools"> The array of the tools sorted from low to high priority.</param>
-        public static void RunAllTasks(string filePath,string destPath,ArrayList tools)
+        static void RunAllTasks(string filePath,string destPath,ArrayList tools)
         {
             //runs on all tools recieved and adds to them .exe
             for (int i = START_INDEX_OF_TOOLS; i < tools.Count; i++)
             {
-                tools[i] = toolExeFolder + "\\" + tools[i] + ".exe";
-                Console.WriteLine(toolExeFolder + "\\" + tools[i] + ".exe");
+                tools[i] = File.ReadAllText(toolExeFolder + "\\" + tools[i]);
             }
             //runs the tools one by one.
             for (int i= START_INDEX_OF_TOOLS; i<tools.Count;i++)
@@ -109,7 +152,7 @@ namespace testServer2
         /// <param name="srcPath"> the source path of the file</param>
         /// <param name="destPath"> the destination of the new file.</param>
         /// <returns></returns>
-        public static Task<int> RunProcessAsync(string fileName,string srcPath,string destPath)
+        static Task<int> RunProcessAsync(string fileName,string srcPath,string destPath)
         {
             var tcs = new TaskCompletionSource<int>();
 
@@ -134,13 +177,13 @@ namespace testServer2
             //open Rest API.
             Thread restApi = new Thread(()=>new SyncServer());
             restApi.Start();
-            Console.WriteLine("started rest api");
+            AddToLogString("started rest api");
             //Initialize all the things that needs to come before the syntax check.
             Thread serverThread;
             //start server socket.
             serverThread = new Thread(() => Server.ConnectionServer.ExecuteServer(11111));
             serverThread.Start();
-            Console.WriteLine("started socket for client listen");
+            AddToLogString("started socket for client listen");
             while(ConnectionServer.GetCloseAllBool()==false)
             {
                 //checks if something got added to the server list by the gui. if it did 
@@ -152,10 +195,10 @@ namespace testServer2
                     //adds to the current data list the original server data list last node.
                     ArrayList tools = new ArrayList();
                     currentDataList.Add(list[currentDataList.Count]);
-                    Console.WriteLine(currentDataList[currentDataList.Count - 1]);
+                    AddToLogString(currentDataList[currentDataList.Count - 1].ToString());
                     string[] paths = Regex.Split((string)currentDataList[currentDataList.Count - 1], ",");
                     string filePath = paths[FILE_PATH_INDEX];
-                    Console.WriteLine(filePath);
+                    AddToLogString(filePath);
                     string[] pathes = { paths[PROJECT_FOLDER_INDEX], paths[GCC_INCLUDE_FOLDER_INDEX], paths[EXTRA_INCLUDE_FOLDER_INDEX] };
                     string destPath = paths[DEST_PATH_INDEX];
                     for(int i=START_TOOLS_INDEX; i<paths.Length;i++)
@@ -168,10 +211,12 @@ namespace testServer2
                 }
                 else
                 {
-                    Thread.Sleep(1000);
+                    Thread.Sleep(TIMEOUT_SLEEP);
                 }
                 
             }
+            File.WriteAllText(logFile, logs);
+            
             
             
         }
