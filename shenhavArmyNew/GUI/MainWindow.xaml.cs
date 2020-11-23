@@ -26,7 +26,7 @@ namespace GUI
             InitializeComponent();
             main = this;
             SqlConnection cnn;
-            string connectionString = "Data Source=E560-02\\SQLEXPRESS;Initial Catalog=ToolsDB;User ID=shenhav;Password=1234";
+            string connectionString = "Data Source=DESKTOP-L628613\\SQLEXPRESS;Initial Catalog=ToolsDB;User ID=shenhav;Password=1234";
             cnn = new SqlConnection(connectionString);
             cnn.Open();
             SqlCommand command = new SqlCommand("Select tool_name,tool_desc,tool_exe_name from tools_table ORDER BY tool_priority ASC;", cnn);

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using Newtonsoft.Json;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace testServer2
 {
@@ -21,6 +22,7 @@ namespace testServer2
         const int EXTRA_INCLUDE_FOLDER_INDEX = 3;
         const int PROJECT_FOLDER_INDEX = 1;
         const int START_INDEX_OF_TOOLS = 0;
+        const string MAIN_DICT_INDEX = "main";
         //paths for all files.
         const string toolExeFolder = @"..\..\..\ToolsExe";
         const string ignoreVariablesTypesPath = @"..\..\..\ignoreVariablesType.txt";
@@ -29,13 +31,13 @@ namespace testServer2
         const string CSyntextFile = @"..\..\..\CSyntext.txt";
         const string logFile = @"..\..\..\LogFile.txt";
         const string FINISH_SUCCESFULL = "Finished succesfully code is ready at the destination path.";
-        
         const int TIMEOUT_SLEEP = 1000;
-        static string logs = GeneralConsts.EMPTY_STRING;
+        static Mutex mutexAddLogFiles = new Mutex();
         static bool compileError = false;
         static ArrayList currentDataList = new ArrayList();
         static int threadNumber = 0;
         static Dictionary<string, Dictionary<string, Object>> final_json = new Dictionary<string, Dictionary<string, Object>>();
+        static Dictionary<string, string> logFiles = new Dictionary<string, string>();
         //static string librariesPath = @"C:\Users\Shenhav\Desktop\Check";
         //global variable declaration.
 
@@ -57,9 +59,11 @@ namespace testServer2
         /// logs is the string that saves all logs and at the end it writes it to the logs txt.
         /// </summary>
         /// <param name="content">what you add to the string</param>
-        public static void AddToLogString(string content)
+        public static void AddToLogString(string filePath,string content)
         {
-            logs += content + GeneralConsts.NEW_LINE;
+            mutexAddLogFiles.WaitOne();
+            logFiles[filePath] += content + GeneralConsts.NEW_LINE;
+            mutexAddLogFiles.ReleaseMutex();
         }
         /// Function - RunAllChecks
         /// <summary>
@@ -75,6 +79,7 @@ namespace testServer2
             Dictionary<string, string> defines = new Dictionary<string, string>();
             Dictionary<string, ArrayList> funcVariables = new Dictionary<string, ArrayList>();
             ArrayList globalVariable = new ArrayList();
+            
             //initialize 
             try
             {
@@ -82,12 +87,12 @@ namespace testServer2
             }
             catch(Exception e)
             {
-                AddToLogString("ERROR IN PREPROCESSOR");
+                AddToLogString(filePath, "ERROR IN PREPROCESSOR");
                 ConnectionServer.CloseConnection(threadNumber,"ERROR IN PREPROCESSOR "+e.ToString() , GeneralConsts.ERROR);
 
             }
-            
-            AddToLogString(keywords.Count.ToString());
+
+            AddToLogString(filePath, keywords.Count.ToString());
             //Syntax Check.
             try
             {
@@ -95,14 +100,14 @@ namespace testServer2
             }
             catch(Exception e)
             {
-                AddToLogString("ERROR IN SyntaxCheck");
+                AddToLogString(filePath, "ERROR IN SyntaxCheck");
                 ConnectionServer.CloseConnection(threadNumber, "ERROR IN SyntaxCheck " + e.ToString(), GeneralConsts.ERROR);
             }
             
             if(!compileError)
             {
-                GeneralCompilerFunctions.printArrayList(keywords);
-                AddToLogString(keywords.Count.ToString());
+                GeneralCompilerFunctions.printArrayList(filePath,keywords);
+                AddToLogString(filePath, keywords.Count.ToString());
                 //just tests.
                 try
                 {
@@ -110,17 +115,23 @@ namespace testServer2
                 }
                 catch (Exception e)
                 {
-                    AddToLogString("ERROR Creating final json");
+                    AddToLogString(filePath, "ERROR Creating final json");
                     ConnectionServer.CloseConnection(threadNumber, "ERROR Creating final json " + e.ToString(), GeneralConsts.ERROR);
                 }
                
                 string dataJson = JsonConvert.SerializeObject(final_json[filePath]["codeInfo"]);
-                AddToLogString("new json "+dataJson);
+                AddToLogString(filePath, "new json " +dataJson);
                 Thread threadOpenTools = new Thread(() => RunAllTasks(filePath, destPath, tools));
                 threadOpenTools.Start();
                 threadOpenTools.Join(GeneralConsts.TIMEOUT_JOIN);
                 ConnectionServer.CloseConnection(threadNumber, FINISH_SUCCESFULL,GeneralConsts.FINISHED_SUCCESFULLY);
+                AddToLogString(filePath, FINISH_SUCCESFULL);
+                Console.WriteLine(logFiles[filePath]);
+                Thread writeToFile = new Thread(() => File.AppendAllText(logFile, logFiles[filePath]));
+                writeToFile.Start();
+                writeToFile.Join(GeneralConsts.TIMEOUT_JOIN);
 
+                
             }
 
         }
@@ -172,19 +183,32 @@ namespace testServer2
             //process.WaitForExit(); might need for synchronize.
             return tcs.Task;
         }
-        static void Main(string[] args)
+        /// Function - InitializeMainProgram
+        /// <summary>
+        /// This function initialize the whole main program. opens all threads needed and more.
+        /// </summary>
+        static void InitializeMainProgram()
         {
-            //open Rest API.
-            Thread restApi = new Thread(()=>new SyncServer());
+            File.WriteAllText(logFile, GeneralConsts.EMPTY_STRING);
+            Thread restApi = new Thread(() => new SyncServer());
             restApi.Start();
-            AddToLogString("started rest api");
+            logFiles.Add(MAIN_DICT_INDEX, GeneralConsts.EMPTY_STRING);
+            AddToLogString(MAIN_DICT_INDEX, "started rest api");
             //Initialize all the things that needs to come before the syntax check.
             Thread serverThread;
             //start server socket.
             serverThread = new Thread(() => Server.ConnectionServer.ExecuteServer(11111));
             serverThread.Start();
-            AddToLogString("started socket for client listen");
-            while(ConnectionServer.GetCloseAllBool()==false)
+            AddToLogString(MAIN_DICT_INDEX, "started socket for client listen");
+        }
+        /// Function - MainLoopToGetFiles
+        /// <summary>
+        /// The function that runs the whole loop of the program that gets new files from the server and
+        /// take cares of them and runs RunAllChecks Function.
+        /// </summary>
+        static void MainLoopToGetFiles()
+        {
+            while (ConnectionServer.GetCloseAllBool() == false)
             {
                 //checks if something got added to the server list by the gui. if it did 
                 //it copies it to the main current list and start to run all the checks on the paths
@@ -195,30 +219,54 @@ namespace testServer2
                     //adds to the current data list the original server data list last node.
                     ArrayList tools = new ArrayList();
                     currentDataList.Add(list[currentDataList.Count]);
-                    AddToLogString(currentDataList[currentDataList.Count - 1].ToString());
+                    AddToLogString(MAIN_DICT_INDEX, currentDataList[currentDataList.Count - 1].ToString());
                     string[] paths = Regex.Split((string)currentDataList[currentDataList.Count - 1], ",");
                     string filePath = paths[FILE_PATH_INDEX];
-                    AddToLogString(filePath);
+                    if (logFiles.ContainsKey(filePath))
+                    {
+                        logFiles[filePath] = GeneralConsts.EMPTY_STRING;
+                    }
+                    else
+                    {
+                        logFiles.Add(filePath, GeneralConsts.EMPTY_STRING);
+                    }
+                    AddToLogString(filePath, "FilePath - " + filePath);
                     string[] pathes = { paths[PROJECT_FOLDER_INDEX], paths[GCC_INCLUDE_FOLDER_INDEX], paths[EXTRA_INCLUDE_FOLDER_INDEX] };
                     string destPath = paths[DEST_PATH_INDEX];
-                    for(int i=START_TOOLS_INDEX; i<paths.Length;i++)
+                    for (int i = START_TOOLS_INDEX; i < paths.Length; i++)
                     {
                         tools.Add(paths[i]);
                     }
-                    Thread runChecksThread = new Thread(() => RunAllChecks(filePath,destPath, pathes,tools));
+                    //because i still dont have a prefect checks for headers so im giving the thread a default null so the program can run.
+                    Thread runChecksThread=null;
+                    if (filePath.Substring(filePath.Length - 1)=="h")
+                    {
+                        //Run header file checks.
+                    }
+                    else
+                    {
+                        runChecksThread = new Thread(() => RunAllChecks(filePath, destPath, pathes, tools));
+                    }
                     runChecksThread.Start();
-                    
+
                 }
                 else
                 {
                     Thread.Sleep(TIMEOUT_SLEEP);
                 }
-                
+
             }
-            File.WriteAllText(logFile, logs);
-            
-            
-            
+        }
+        /// Function - Main
+        /// <summary>
+        /// Main Function.
+        /// </summary>
+        /// <param name="args"> arguments.</param>
+        static void Main(string[] args)
+        {
+            //open Rest API.
+            InitializeMainProgram();
+            MainLoopToGetFiles();
         }
     }
 }

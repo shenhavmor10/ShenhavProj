@@ -1,0 +1,44 @@
+FilePath - C:\Users\Shenhav\Desktop\ArmyNew4\shenhavArmyNew\TestCCode2\TestCCode2\test.c
+new : int32
+new : mychar
+34
+float
+do
+typedef
+register
+auto
+char
+unsigned
+int
+default
+else
+struct example2
+while
+switch
+struct example1
+continue
+union
+int32
+if
+short
+static
+volatile
+break
+void
+extern
+sizeof
+double
+long
+for
+case
+enum
+mychar
+return
+const
+struct
+goto
+signed
+36
+new json {"includes":[],"includesAmount":0,"definesAmount":2,"defines":{"int32":"int","mychar":"char"},"Globalvariables":[{"parameterName":"num","parameterType":"int"}]}
+Finished succesfully code is ready at the destination path.
+

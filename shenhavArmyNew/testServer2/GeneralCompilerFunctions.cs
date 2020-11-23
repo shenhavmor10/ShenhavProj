@@ -361,6 +361,7 @@ namespace testServer2
         /// make sure every variable is exist in the code and that their type of the equation
         /// is the same.
         /// </summary>
+        /// <param name="threadNumber"> the number of the current thread.</param>
         /// <param name="sr"> buffer type MyStream.</param>
         /// <param name="codeLine"> the code line type string.</param>
         /// <param name="blocksAndNames"> ArrayList of variables.</param>
@@ -402,6 +403,10 @@ namespace testServer2
         /// it uses the functions mentioned in the documentations before.
         /// it take cares scopes and no scopes with the parameter IsScope type bool.
         /// </summary>
+        /// <param name="path"> the path of the file.</param>
+        /// <param name="globalVariables"> variables that all file have.</param>
+        /// <param name="threadNumber"> the number of the current thread running.</param>
+        /// <param name="variables"> all of the variables that the scope knows.</param>
         /// <param name="sr"> buffer type MyStream.</param>
         /// <param name="codeLine"> code line type string.</param>
         /// <param name="IsScope"> bool type IsScope.</param>
@@ -409,7 +414,7 @@ namespace testServer2
         /// <param name="blocksAndNames"> blocksAndNames type ArrayList that conatins the code variables in the scope.</param>
         /// <param name="parameters"> parameters type ArrayList conatins the function parameters.</param>
         /// <param name="functionLength"> scopeLength type int default is 0 if the code line is outside any scopes.</param>
-        static void ChecksInSyntaxCheck(MyStream sr,string codeLine, bool IsScope, Hashtable keywords,int threadNumber,ArrayList variables,ArrayList globalVariables,ArrayList blocksAndNames,ArrayList parameters=null, int functionLength = 0)
+        static void ChecksInSyntaxCheck(string path,MyStream sr,string codeLine, bool IsScope, Hashtable keywords,int threadNumber,ArrayList variables,ArrayList globalVariables,ArrayList blocksAndNames,ArrayList parameters=null, int functionLength = 0)
         {
             //adds the parameters of the function to the current ArrayList of variables.
             if(parameters!=null)
@@ -458,13 +463,13 @@ namespace testServer2
                     string error=(codeLine + " keyword does not exist. row : "+sr.curRow);
                     try
                     {
-                        MainProgram.AddToLogString(sr.curRow.ToString());
+                        MainProgram.AddToLogString(path,sr.curRow.ToString());
                     }
                     catch(Exception e)
                     {
-                        MainProgram.AddToLogString(e.ToString());
+                        MainProgram.AddToLogString(path, e.ToString());
                     }
-                    MainProgram.AddToLogString(error);
+                    MainProgram.AddToLogString(path, error);
                     Server.ConnectionServer.CloseConnection(threadNumber, error, GeneralConsts.ERROR);
                     CompileError = true;
 
@@ -554,7 +559,7 @@ namespace testServer2
                     if (OpenBlockPattern.IsMatch(codeLine))
                     {
                         NextScopeLength(sr, ref codeLine, ref scopeLength, true);
-                        ChecksInSyntaxCheck(sr, codeLine, true, keywords, threadNumber,variables, globalVariable, blocksAndNames, parameters, scopeLength + 1);
+                        ChecksInSyntaxCheck(path,sr, codeLine, true, keywords, threadNumber,variables, globalVariable, blocksAndNames, parameters, scopeLength + 1);
                         parameters.Clear();
                     }
                     // if there is a function it saves its parameters.
@@ -571,7 +576,7 @@ namespace testServer2
                     //handling outside the scopes.
                     else
                     {
-                        ChecksInSyntaxCheck(sr, codeLine, false, keywords, threadNumber,variables, globalVariable, blocksAndNames);
+                        ChecksInSyntaxCheck(path,sr, codeLine, false, keywords, threadNumber,variables, globalVariable, blocksAndNames);
                     }
 
                 }
@@ -603,7 +608,7 @@ namespace testServer2
             }
             catch(Exception e)
             {
-                MainProgram.AddToLogString(e.ToString());
+                MainProgram.AddToLogString(path,e.ToString());
             }
             string line = sr.ReadLine();
             string[] keysArr = Regex.Split(line, splitBy);
@@ -638,7 +643,7 @@ namespace testServer2
             }
             catch (Exception e)
             {
-                MainProgram.AddToLogString(String.Format("{0} Second exception caught.", e.ToString()));
+                MainProgram.AddToLogString(path,String.Format("{0} Second exception caught.", e.ToString()));
                 Server.ConnectionServer.CloseConnection(threadNumber, FILE_NOT_FOUND, GeneralConsts.ERROR);
                 endLoop = true;
             }
@@ -704,7 +709,7 @@ namespace testServer2
                                 {
                                     keywords.Add(CreateMD5(newKeyword), newKeyword);
                                     defines.Add(newKeyword, defineOriginalWord);
-                                    MainProgram.AddToLogString("new Keywords :" + newkeyWords[0]);
+                                    MainProgram.AddToLogString(path, "new Keywords :" + newkeyWords[0]);
                                 }
                             }
                         }
@@ -721,7 +726,7 @@ namespace testServer2
                             {
                                 keywords.Add(CreateMD5(newKeyword), newKeyword);
                                 defines.Add(newKeyword, defineOriginalWord);
-                                MainProgram.AddToLogString("new : "+newKeyword);
+                                MainProgram.AddToLogString(path, "new : " +newKeyword);
                             }
                         }
                     }
@@ -750,7 +755,7 @@ namespace testServer2
                     {
                         result = CutBetween2Strings(codeLine, "\"", "\"");
                     }
-                    MainProgram.AddToLogString(result);
+                    MainProgram.AddToLogString(path, result);
                     //only enters an include if it didnt already included him.
                     if (!includes.Contains(CreateMD5(result)))
                     {
@@ -780,7 +785,7 @@ namespace testServer2
                         }
                         preprocessorThread.Start();
                         preprocessorThread.Join(GeneralConsts.TIMEOUT_JOIN);
-                        MainProgram.AddToLogString("thread " + threadNumber + "stopped");
+                        MainProgram.AddToLogString(path, "thread " + threadNumber + "stopped");
                     }
                 }
 
@@ -887,12 +892,12 @@ namespace testServer2
         /// prints an arrayList.
         /// </summary>
         /// <param name="a"> Hashtable A to print</param>
-        public static void printArrayList(Hashtable a)
+        public static void printArrayList(string path,Hashtable a)
         {
             ICollection keys = a.Keys;
             foreach (string key in keys)
             {
-                MainProgram.AddToLogString(a[key].ToString());
+                MainProgram.AddToLogString(path,a[key].ToString());
             }
         }
         /// Function - AddToArrayListFromFile

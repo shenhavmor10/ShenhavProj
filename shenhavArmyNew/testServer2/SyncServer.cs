@@ -44,12 +44,10 @@ namespace testServer2
                     context.Response.SendChunked = true;
                     context.Response.ContentType = "application/json";
                     string dataJson = GeneralConsts.EMPTY_STRING;
-                    MainProgram.AddToLogString(context.Request.Headers.ToString());
                     Dictionary<string, Dictionary<string, object>> final_json = MainProgram.GetFinalJson();
                     string filePath = context.Request.QueryString["filePath"];
                     bool not_found_pattern = false;
                     bool not_found = false;
-                    MainProgram.AddToLogString("filePath  = "+filePath);
                     char[] trimChars = { '/', ' '};
                     int totalTime = 0;
                     string path = GeneralConsts.EMPTY_STRING;
@@ -59,18 +57,18 @@ namespace testServer2
                     {
                         if(context.Request.QueryString["pattern"]!=null)
                         {
-                            MainProgram.AddToLogString(context.Request.QueryString["pattern"]);
-                            MainProgram.AddToLogString(context.Request.QueryString["returnSize"]);
+                            MainProgram.AddToLogString(filePath,context.Request.QueryString["pattern"]);
+                            MainProgram.AddToLogString(filePath, context.Request.QueryString["returnSize"]);
                             r = new Regex(context.Request.QueryString["pattern"]);
                             string returnSize = context.Request.QueryString["returnSize"];
                             string [] result=GeneralRestApiServerMethods.SearchPattern(r, returnSize, filePath);
                             dataJson = JsonConvert.SerializeObject(result);
-                            MainProgram.AddToLogString(dataJson);
+                            MainProgram.AddToLogString(filePath, dataJson);
                         }
                         else if(context.Request.QueryString["readyPattern"] != null)
                         {
-                            MainProgram.AddToLogString(context.Request.QueryString["readyPattern"]);
-                            MainProgram.AddToLogString(context.Request.QueryString["returnSize"]);
+                            MainProgram.AddToLogString(filePath, context.Request.QueryString["readyPattern"]);
+                            MainProgram.AddToLogString(filePath, context.Request.QueryString["returnSize"]);
                             if (GeneralRestApiServerMethods.TakePatternFromFile(context.Request.QueryString["readyPattern"]) == GeneralConsts.EMPTY_STRING)
                                 not_found_pattern = true;
                             else
@@ -86,17 +84,17 @@ namespace testServer2
                             path = context.Request.RawUrl;
                             path = path.Trim(trimChars);
                             path = path.Split('?')[0];
-                            MainProgram.AddToLogString(path);
+                            MainProgram.AddToLogString(filePath, path);
                             //switch case for get commands.
                             switch (path)
                             {
                                 case "functions":
                                     dataJson = JsonConvert.SerializeObject(final_json[filePath]["function"]);
-                                    MainProgram.AddToLogString(dataJson);
+                                    MainProgram.AddToLogString(filePath, dataJson);
                                     break;
                                 case "codeInfo":
                                     dataJson = JsonConvert.SerializeObject(final_json[filePath]["codeInfo"]);
-                                    MainProgram.AddToLogString(dataJson);
+                                    MainProgram.AddToLogString(filePath, dataJson);
                                     break;
                                 default:
                                     break;
