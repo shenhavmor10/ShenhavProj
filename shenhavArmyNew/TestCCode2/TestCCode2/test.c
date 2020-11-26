@@ -1,4 +1,5 @@
 #pragma once
+#include <stdio.h>
 #define int32 int
 #define mychar char
 #define Eight 8

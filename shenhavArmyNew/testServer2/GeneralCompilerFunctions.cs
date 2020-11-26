@@ -12,7 +12,6 @@ namespace testServer2
 {
     public class GeneralCompilerFunctions
     {
-        
         const string FILE_NOT_FOUND = "No such file found.";
         //All Patterns That is being searched in the code.
         static Regex OpenBlockPattern = new Regex(@".*{.*");
@@ -20,15 +19,16 @@ namespace testServer2
         static Regex functionPatternInH = new Regex(@"^[a-zA-Z]+.*\s[a-zA-Z].*[(].*[)]\;$");
         static Regex staticFunctionPatternInC = new Regex(@"^.*static.*\s.*[a-zA-Z]+.*\s[a-zA-Z].*[(].*[)]$");
         static Regex FunctionPatternInC = new Regex(@"^([^ ]+\s)?[^ ]+\s(.*\s)?[^ ]+\([^()]*\)$");
-        static Regex StructPattern = new Regex(@".*struct(\s.+{$|[^\s]+$|.*{.+;$)");
-        static Regex TypedefOneLine = new Regex(@"^.*typedef(\sstruct)?\s.+\s.+;$");
-        static Regex VariableDecleration = new Regex(@"^(?!.*return)(?=(\s)?[^\s()]+\s((\*)*(\s))?[^\s()=]+(\s?=.+;|[^()=]*;)$)");
+        static Regex StructPattern = new Regex(@"^([^\s\/\*()]+)?(\s)?(struct\s(.+{$|.*{$|[^\s;]+$))");
+        static Regex TypedefOneLine = new Regex(@"^.*typedef\sstruct\s[^\s]+\s[^\s]+;$");
+        static Regex VariableDecleration = new Regex(@"^(?!.*return)(?=(\s)?[^\s()]+\s((\*)*(\s))?[^\s()=]+(\s?=.+;|[^()=]*;))");
         static Regex VariableEquation = new Regex(@"^(?!.*return)(?=(\s)?([^\s()]+\s)?((\*)*(\s))?[^\s()]+(\s)?=(\s)?[A-Za-z][^\s()]*;$)");
         static Regex DefineDecleration = new Regex(@"^(\s)?#define ([^ ]+) [^\d][^ ()]*( [^ ()]+)?$");
         //include <NAME>
         static Regex IncludeTrianglesPattern = new Regex(@"^(\s)?#include.{0,2}<.+>$");
         static Regex IncludeRegularPattern = new Regex(@"^(\s)?#include\s{0,2}"".+\""$");
         static Regex IncludePathPattern = new Regex(@"^(\s)?#include\s{0,2}"".+\""$");
+        const string Documentation = @"(\/\*.*\*\/)|((?!.*\/\*).*\*\/)|(\/\/.*)";
         //chars to trim.
         static char[] CharsToTrim = { '&', '*', '\t', ' ', ';', '{', '}' };
         static bool CompileError = false;
@@ -66,7 +66,7 @@ namespace testServer2
         /// <param name="Seek"> bool type parameter for returning the buffer to where it started from
         ///                     or to keep the buffer where it is after the scope ends. </param>
         /// <returns></returns>
-        public static bool NextScopeLength(MyStream sr, ref string codeLine, ref int count,bool Seek)
+        public static bool NextScopeLength(MyStream sr, ref string codeLine, ref int count, bool Seek)
         {
             //stack to count the blocks.
             Stack myStack = new Stack();
@@ -78,8 +78,8 @@ namespace testServer2
             bool found = false;
             while ((codeLine != null && myStack.Count > 0))
             {
-                count++;
                 codeLine = sr.ReadLine();
+                count++;
                 if (codeLine.IndexOf("{") != GeneralConsts.NOT_FOUND_STRING)
                 {
                     myStack.Push(codeLine);
@@ -88,6 +88,7 @@ namespace testServer2
                 {
                     myStack.Pop();
                 }
+                
 
             }
             if (myStack.Count == 0)
@@ -96,10 +97,11 @@ namespace testServer2
             }
             count = count - 1;
             //checking the bool for seeking.
-            if(Seek)
+            if (Seek)
             {
                 sr.Seek(curPos);
                 codeLine = ScopeName;
+                Console.WriteLine(codeLine);
             }
             myStack.Clear();
             return found;
@@ -129,13 +131,13 @@ namespace testServer2
         /// <param name="sr"> buffer type MyStream</param>
         /// <param name="codeLine"> string </param>
         /// <returns> returns the amount of rows the documentation was.</returns>
-        public static int skipDocumentation(MyStream sr,string codeLine)
+        public static int skipDocumentation(MyStream sr, string codeLine)
         {
             int count = 0;
             uint pos = sr.Pos;
-            if(codeLine.IndexOf("//")!= GeneralConsts.NOT_FOUND_STRING)
+            if (codeLine.IndexOf("//") != GeneralConsts.NOT_FOUND_STRING)
             {
-                while((codeLine.IndexOf("//")!= GeneralConsts.NOT_FOUND_STRING))
+                while ((codeLine.IndexOf("//") != GeneralConsts.NOT_FOUND_STRING))
                 {
                     pos = sr.Pos;
                     count++;
@@ -144,9 +146,9 @@ namespace testServer2
                 sr.Seek(pos);
                 count--;
             }
-            if(codeLine.IndexOf("/*")!= GeneralConsts.NOT_FOUND_STRING)
+            if (codeLine.IndexOf("/*") != GeneralConsts.NOT_FOUND_STRING)
             {
-                while(!(codeLine.IndexOf("*/") != GeneralConsts.NOT_FOUND_STRING))
+                while (!(codeLine.IndexOf("*/") != GeneralConsts.NOT_FOUND_STRING))
                 {
                     count++;
                     codeLine = sr.ReadLine();
@@ -191,7 +193,7 @@ namespace testServer2
         {
             ParametersType result = null;
             bool found = false;
-            for (int i = 0; i < a.Count&&!found; i++)
+            for (int i = 0; i < a.Count && !found; i++)
             {
                 if (((ParametersType)a[i]).parameterName == name)
                 {
@@ -210,7 +212,7 @@ namespace testServer2
         static ParametersType GetParameterNameFromLine(string line)
         {
             string name;
-            string type=line;
+            string type = line;
             int lastIndex;
             //takes the substring that starts in the last space accurance and his length.
             name = line.Substring(line.LastIndexOf(GeneralConsts.SPACEBAR) + 1, (line.Length - (line.LastIndexOf(GeneralConsts.SPACEBAR) + 1)));
@@ -252,14 +254,14 @@ namespace testServer2
         ///                        outside a scope.</param>
         /// <param name="sr"> buffer type MyStream.</param>
         /// <returns></returns>
-        static bool VariableDeclarationHandler(ref string codeLine,ref int pos,Hashtable keywords,int threadNumber,ArrayList variables,ArrayList globalVariables, ArrayList blocksAndNames,bool IsScope,MyStream sr)
+        static bool VariableDeclarationHandler(ref string codeLine, ref int pos, Hashtable keywords, int threadNumber, bool IsScope, MyStream sr,string typeEnding, ArrayList variables=null, ArrayList globalVariables=null, ArrayList blocksAndNames=null)
         {
             bool DifferentTypes = true;
             int loopCount;
             string parameterType = GeneralConsts.EMPTY_STRING;
             int j;
             bool found = true;
-            char[] trimChars = { '\t', ' ',';' };
+            char[] trimChars = { '\t', ' ', ';' };
             
             loopCount = KeywordsAmountOnVariableDeclaration(codeLine);
             for (j = 0; j < loopCount; j++)
@@ -302,14 +304,14 @@ namespace testServer2
             // checks if there is already the same name in the same scope.
             if (IsExistInArrayList(((ArrayList)blocksAndNames[blocksAndNames.Count - 1]), name) != null)
             {
-                Server.ConnectionServer.CloseConnection(threadNumber, ("you have used the same name for multiple variables in row " + sr.curRow + ". name - " + name),GeneralConsts.ERROR);
+                Server.ConnectionServer.CloseConnection(threadNumber, ("you have used the same name for multiple variables in row " + sr.curRow + ". name - " + name), GeneralConsts.ERROR);
                 CompileError = true;
             }
             else
             {
                 ((ArrayList)blocksAndNames[blocksAndNames.Count - 1]).Add(new ParametersType(name, parameterType));
                 variables.Add(new ParametersType(name, parameterType));
-                if(!IsScope)
+                if (!IsScope)
                 {
                     try
                     {
@@ -319,20 +321,20 @@ namespace testServer2
                     {
                         ConnectionServer.CloseConnection(threadNumber, ("you have used the same name for multiple variables in row " + sr.curRow + ". name - " + name), GeneralConsts.ERROR);
                     }
-                    
+
                 }
             }
             //if the declaration is also a equation.
-            if(VariableEquation.IsMatch(codeLine))
+            if (VariableEquation.IsMatch(codeLine))
             {
-                DifferentTypes=VariableEquationHandler(sr, codeLine, blocksAndNames,threadNumber);
+                DifferentTypes = VariableEquationHandler(sr, codeLine, blocksAndNames, threadNumber);
             }
-            if(!DifferentTypes)
+            if (!DifferentTypes)
             {
                 Server.ConnectionServer.CloseConnection(threadNumber, codeLine + " types of both variables are different in row : " + sr.curRow, GeneralConsts.ERROR);
                 CompileError = true;
             }
-            
+
             return found;
         }
         /// Function - getVariableTypeParameterFromArrayList
@@ -342,13 +344,13 @@ namespace testServer2
         /// <param name="blocksAndNames"> ArrayList type.</param>
         /// <param name="name"> the name to get the whole node from.</param>
         /// <returns> returns parameterType type of the node named like "name".</returns>
-        static ParametersType GetVariableTypeParameterFromArrayList(ArrayList blocksAndNames,string name)
+        static ParametersType GetVariableTypeParameterFromArrayList(ArrayList blocksAndNames, string name)
         {
             bool endLoop = false;
-            ParametersType result =null;
-            for(int i=blocksAndNames.Count;i>0&&!endLoop;i--)
+            ParametersType result = null;
+            for (int i = blocksAndNames.Count; i > 0 && !endLoop; i--)
             {
-                if ((result=IsExistInArrayList((ArrayList)blocksAndNames[i-1], name))!=null)
+                if ((result = IsExistInArrayList((ArrayList)blocksAndNames[i - 1], name)) != null)
                 {
                     endLoop = true;
                 }
@@ -366,17 +368,17 @@ namespace testServer2
         /// <param name="codeLine"> the code line type string.</param>
         /// <param name="blocksAndNames"> ArrayList of variables.</param>
         /// <returns>returns if the variable equation is good.</returns>
-        static bool VariableEquationHandler(MyStream sr,string codeLine, ArrayList blocksAndNames,int threadNumber)
+        static bool VariableEquationHandler(MyStream sr, string codeLine, ArrayList blocksAndNames, int threadNumber)
         {
-            char[] trimChars = { '\t', ' '};
+            char[] trimChars = { '\t', ' ' };
             bool isSameType = true;
             //splits the equation to 2 lines before the '=' and after it.
             string temp = Regex.Split(codeLine, GeneralConsts.EQUAL_SIGN)[0].Trim(trimChars);
             //takes the first param name.
             ParametersType result = GetParameterNameFromLine(temp);
-            string varName1=result.parameterName;
+            string varName1 = result.parameterName;
             temp = Regex.Split(codeLine, GeneralConsts.EQUAL_SIGN)[1];
-            char[] searchingChars = { ';'};
+            char[] searchingChars = { ';' };
             //takes the second param name.
             string varName2 = temp.Substring(0, temp.IndexOfAny(searchingChars));
             varName2 = varName2.Trim(trimChars);
@@ -384,18 +386,26 @@ namespace testServer2
             ParametersType var1 = GetVariableTypeParameterFromArrayList(blocksAndNames, varName1.Trim(GeneralConsts.ASTERIX));
             ParametersType var2 = GetVariableTypeParameterFromArrayList(blocksAndNames, varName2.Trim(GeneralConsts.ASTERIX));
             //make sures the variable 2 is exist.
-            if(var2==null)
+            if (var2 == null)
             {
-                Server.ConnectionServer.CloseConnection(threadNumber,"There is no parameter named " + varName2 + " in row : " + sr.curRow, GeneralConsts.ERROR);
+                Server.ConnectionServer.CloseConnection(threadNumber, "There is no parameter named " + varName2 + " in row : " + sr.curRow, GeneralConsts.ERROR);
                 CompileError = true;
                 isSameType = false;
             }
             //checks if their type is the same.
-            if(isSameType && var1.parameterType!=var2.parameterType)
+            if (isSameType && var1.parameterType != var2.parameterType)
             {
                 isSameType = false;
             }
             return isSameType;
+        }
+        static string cleanLineFromDoc(string codeLine)
+        {
+            char[] trimChar = { '\t', ' ' };
+            string result = "";
+            result=Regex.Replace(codeLine, Documentation, "");
+            result = result.Trim(trimChar);
+            return result;
         }
         /// Function - ChecksInSyntaxCheck
         /// <summary>
@@ -414,20 +424,35 @@ namespace testServer2
         /// <param name="blocksAndNames"> blocksAndNames type ArrayList that conatins the code variables in the scope.</param>
         /// <param name="parameters"> parameters type ArrayList conatins the function parameters.</param>
         /// <param name="functionLength"> scopeLength type int default is 0 if the code line is outside any scopes.</param>
-        static void ChecksInSyntaxCheck(string path,MyStream sr,string codeLine, bool IsScope, Hashtable keywords,int threadNumber,ArrayList variables,ArrayList globalVariables,ArrayList blocksAndNames,ArrayList parameters=null, int functionLength = 0)
+        static void ChecksInSyntaxCheck(string path, MyStream sr, string codeLine, bool IsScope, Hashtable keywords, int threadNumber,string typeEnding, ArrayList variables, ArrayList globalVariables, ArrayList blocksAndNames, ArrayList parameters = null, int functionLength = 0)
         {
             //adds the parameters of the function to the current ArrayList of variables.
-            if(parameters!=null)
+            int i;
+            if (parameters != null)
             {
-                blocksAndNames.Add(new ArrayList());
-                ((ArrayList)blocksAndNames[1]).AddRange(parameters);
+                if(typeEnding=="c")
+                {
+                    blocksAndNames.Add(new ArrayList());
+                    ((ArrayList)blocksAndNames[1]).AddRange(parameters);
+                }
+                else if(typeEnding=="h")
+                {
+                    for (i = 0; i < parameters.Count; i++)
+                    {
+                        if (!keywords.ContainsKey(((ParametersType)parameters[i]).parameterType))
+                        {
+                            CompileError = true;
+                        }
+                    }
+                }
             }
-            if(StructPattern.IsMatch(codeLine))
+            codeLine = cleanLineFromDoc(codeLine);
+            if (StructPattern.IsMatch(codeLine))
             {
                 //Add struct keywords to the keywords Hashtable.
                 AddStructNames(sr, codeLine, keywords);
             }
-            if (codeLine.Trim(GeneralConsts.TAB_SPACE).IndexOf("{")!= GeneralConsts.NOT_FOUND_STRING)
+            if (codeLine.Trim(GeneralConsts.TAB_SPACE).IndexOf("{") != GeneralConsts.NOT_FOUND_STRING)
             {
                 codeLine = sr.ReadLine();
             }
@@ -435,11 +460,10 @@ namespace testServer2
             bool keywordCheck = true;
             bool DifferentTypesCheck = true;
             int pos = 0;
-            int i;
             ArrayList keywordResults = new ArrayList();
-            for (i = 0; i < functionLength+1; i++)
+            for (i = 0; i < functionLength + 1&&!CompileError; i++)
             {
-                if(codeLine.Trim(GeneralConsts.TAB_SPACE)== GeneralConsts.EMPTY_STRING)
+                if (codeLine.Trim(GeneralConsts.TAB_SPACE) == GeneralConsts.EMPTY_STRING)
                 {
                     codeLine = sr.ReadLine();
                 }
@@ -450,50 +474,50 @@ namespace testServer2
                 }
                 if (VariableDecleration.IsMatch(codeLine) && !(codeLine.IndexOf("typedef") != GeneralConsts.NOT_FOUND_STRING))
                 {
-                    keywordCheck = VariableDeclarationHandler(ref codeLine, ref pos, keywords,threadNumber,variables,globalVariables, blocksAndNames, IsScope, sr);
+                    keywordCheck = VariableDeclarationHandler(ref codeLine, ref pos, keywords, threadNumber, IsScope, sr,typeEnding, variables, globalVariables, blocksAndNames);
+                    if (!keywordCheck)
+                    {
+                        string error = (codeLine + " keyword does not exist. row : " + sr.curRow);
+                        try
+                        {
+                            MainProgram.AddToLogString(path, sr.curRow.ToString());
+                        }
+                        catch (Exception e)
+                        {
+                            MainProgram.AddToLogString(path, e.ToString());
+                        }
+                        MainProgram.AddToLogString(path, error);
+                        Server.ConnectionServer.CloseConnection(threadNumber, error, GeneralConsts.ERROR);
+                        CompileError = true;
+
+                    }
                 }
-                else if(VariableEquation.IsMatch(codeLine))
+                else if (typeEnding=="c"&&VariableEquation.IsMatch(codeLine))
                 {
-                    DifferentTypesCheck = VariableEquationHandler(sr, codeLine, blocksAndNames,threadNumber);
+                    DifferentTypesCheck = VariableEquationHandler(sr, codeLine, blocksAndNames, threadNumber);
+                    if (!DifferentTypesCheck)
+                    {
+                        string error = (codeLine + " types of both variables are different in row : " + sr.curRow);
+                        Server.ConnectionServer.CloseConnection(threadNumber, error, GeneralConsts.ERROR);
+                        CompileError = true;
+                    }
                 }
                 codeLine = codeLine.Trim();
                 //checks if any of the error bools is on.
-                if (!keywordCheck)
-                {
-                    string error=(codeLine + " keyword does not exist. row : "+sr.curRow);
-                    try
-                    {
-                        MainProgram.AddToLogString(path,sr.curRow.ToString());
-                    }
-                    catch(Exception e)
-                    {
-                        MainProgram.AddToLogString(path, e.ToString());
-                    }
-                    MainProgram.AddToLogString(path, error);
-                    Server.ConnectionServer.CloseConnection(threadNumber, error, GeneralConsts.ERROR);
-                    CompileError = true;
-
-                }
-                if(!DifferentTypesCheck)
-                {
-                    string error=(codeLine + " types of both variables are different in row : "+sr.curRow);
-                    Server.ConnectionServer.CloseConnection(threadNumber, error, GeneralConsts.ERROR);
-                    CompileError = true;
-                }
                 pos = 0;
                 //resets the error bools.
-                keywordCheck = DifferentTypesCheck = true; 
-                if (codeLine.IndexOf("//")!= GeneralConsts.NOT_FOUND_STRING || codeLine.IndexOf("/*")!= GeneralConsts.NOT_FOUND_STRING)
+                keywordCheck = DifferentTypesCheck = true;
+                if (codeLine.IndexOf("//") != GeneralConsts.NOT_FOUND_STRING || codeLine.IndexOf("/*") != GeneralConsts.NOT_FOUND_STRING)
                 {
                     //skips documentation if needed.
-                    i+=skipDocumentation(sr, codeLine);
+                    i += skipDocumentation(sr, codeLine);
                 }
                 //adds a new ArrayList inside the keywordsAndNames ArrayList for the scope that has started.
-                if(OpenBlockPattern.IsMatch(codeLine))
+                if (OpenBlockPattern.IsMatch(codeLine))
                 {
                     blocksAndNames.Add(new ArrayList());
                 }
-                if(CloseBlockPattern.IsMatch(codeLine))
+                if (CloseBlockPattern.IsMatch(codeLine))
                 {
                     try
                     {
@@ -501,15 +525,15 @@ namespace testServer2
                         blocksAndNames.RemoveAt(blocksAndNames.Count - 1);
 
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         //bad scoping causes the function to remove from an ArrayList something while its already 0.
-                        Server.ConnectionServer.CloseConnection(threadNumber,"bad scoping in function in row "+ sr.curRow, GeneralConsts.ERROR);
+                        Server.ConnectionServer.CloseConnection(threadNumber, "bad scoping in function in row " + sr.curRow, GeneralConsts.ERROR);
                         CompileError = true;
                     }
                 }
                 //if the code line is in a scope or if its not the last line in the scope continute to the next line.
-                if (IsScope&&i!=functionLength)
+                if (IsScope && i != functionLength)
                 {
                     codeLine = sr.ReadLine();
                 }
@@ -523,6 +547,79 @@ namespace testServer2
                 }
             }
         }
+        static bool CheckInSyntaxCheckH(string path, MyStream sr, string codeLine, Hashtable keywords, bool IsScope, int threadNumber, ArrayList parameters = null, int functionLength = 0)
+        {
+            int i;
+            if (parameters != null)
+            {
+                for (i = 0; i < parameters.Count; i++)
+                {
+                    if (!keywords.ContainsKey(((ParametersType)parameters[i]).parameterType))
+                    {
+                        CompileError = true;
+                    }
+                }
+            }
+            if (StructPattern.IsMatch(codeLine))
+            {
+                //Add struct keywords to the keywords Hashtable.
+                AddStructNames(sr, codeLine, keywords);
+            }
+            if (codeLine.Trim(GeneralConsts.TAB_SPACE).IndexOf("{") != GeneralConsts.NOT_FOUND_STRING)
+            {
+                codeLine = sr.ReadLine();
+            }
+            int pos = 0;
+            bool keywordCheck = true;
+            ArrayList keywordResults = new ArrayList();
+            for (i = 0; i < functionLength + 1; i++)
+            {
+                if (codeLine.Trim(GeneralConsts.TAB_SPACE) == GeneralConsts.EMPTY_STRING)
+                {
+                    codeLine = sr.ReadLine();
+                }
+                //take cares to all of those situations.
+                if (StructPattern.IsMatch(codeLine) || TypedefOneLine.IsMatch(codeLine))
+                {
+                    keywordResults = AddStructNames(sr, codeLine, keywords);
+                }
+                if (VariableDecleration.IsMatch(codeLine) && !(codeLine.IndexOf("typedef") != GeneralConsts.NOT_FOUND_STRING))
+                {
+                    //keywordCheck = VariableDeclarationHandler(ref codeLine, ref pos, keywords, threadNumber, variables, globalVariables, blocksAndNames, IsScope, sr);
+                }
+                if (!keywordCheck)
+                {
+                    string error = (codeLine + " keyword does not exist. row : " + sr.curRow);
+                    try
+                    {
+                        MainProgram.AddToLogString(path, sr.curRow.ToString());
+                    }
+                    catch (Exception e)
+                    {
+                        MainProgram.AddToLogString(path, e.ToString());
+                    }
+                    MainProgram.AddToLogString(path, error);
+                    Server.ConnectionServer.CloseConnection(threadNumber, error, GeneralConsts.ERROR);
+                    CompileError = true;
+
+                }
+                pos = 0;
+                keywordCheck = true;
+                if (codeLine.IndexOf("//") != GeneralConsts.NOT_FOUND_STRING || codeLine.IndexOf("/*") != GeneralConsts.NOT_FOUND_STRING)
+                {
+                    //skips documentation if needed.
+                    i += skipDocumentation(sr, codeLine);
+                }
+                if (IsScope && i != functionLength)
+                {
+                    codeLine = sr.ReadLine();
+                }
+
+            }
+            return CompileError;
+
+        }
+           
         /// Function - SyntaxCheck
         /// <summary>
         /// that function uses the Function "ChecksInSyntaxCheck" if that is in a scope
@@ -530,7 +627,7 @@ namespace testServer2
         /// </summary>
         /// <param name="path"> The path of the c code type string.</param>
         /// <param name="keywords"> keywords type Hashtable that conatins the code keywords.</param>
-        public static bool SyntaxCheck(string path,ArrayList globalVariable, Hashtable keywords,Dictionary<string,ArrayList> funcVariables,int threadNumber)
+        public static bool SyntaxCheck(string path,ArrayList globalVariable, Hashtable keywords,Dictionary<string,ArrayList> funcVariables,int threadNumber,string typeEnding)
         {
             MyStream sr=null;
             try
@@ -549,34 +646,42 @@ namespace testServer2
                 ArrayList variables = new ArrayList();
                 //adds an ArrayList inside blocksAndNames ArrayList for the action outside the scopes.
                 blocksAndNames.Add(new ArrayList());
-                string codeLine;
+                string codeLine=sr.ReadLine();
                 int scopeLength = 0;
                 string lastFuncLine = "";
-                while ((codeLine = sr.ReadLine()) != null && !CompileError)
+                while (((codeLine = sr.ReadLine())!=null) && !CompileError)
                 {
+                        
                     scopeLength = 0;
                     //handling the scopes.
                     if (OpenBlockPattern.IsMatch(codeLine))
                     {
                         NextScopeLength(sr, ref codeLine, ref scopeLength, true);
-                        ChecksInSyntaxCheck(path,sr, codeLine, true, keywords, threadNumber,variables, globalVariable, blocksAndNames, parameters, scopeLength + 1);
+                        ChecksInSyntaxCheck(path, sr, codeLine, true, keywords, threadNumber,typeEnding, variables, globalVariable, blocksAndNames, parameters, scopeLength + 1);
                         parameters.Clear();
                     }
                     // if there is a function it saves its parameters.
                     else if (FunctionPatternInC.IsMatch(codeLine))
                     {
-                        parameters.AddRange(GeneralRestApiServerMethods.FindParameters(codeLine));
-                        if(lastFuncLine!="")
+                        
+                        parameters.AddRange(GeneralRestApiServerMethods.FindParameters(cleanLineFromDoc(codeLine)));
+                        if (lastFuncLine != "")
                         {
                             funcVariables.Add(lastFuncLine, new ArrayList(variables));
                             variables.Clear();
                         }
                         lastFuncLine = codeLine;
                     }
+                    else if (functionPatternInH.IsMatch(codeLine))
+                    {
+                        parameters.AddRange(GeneralRestApiServerMethods.FindParameters(cleanLineFromDoc(codeLine)));
+                        lastFuncLine = codeLine;
+                        ChecksInSyntaxCheck(path, sr, codeLine, false, keywords, threadNumber, typeEnding, variables, globalVariable, blocksAndNames,parameters);
+                    }
                     //handling outside the scopes.
                     else
                     {
-                        ChecksInSyntaxCheck(path,sr, codeLine, false, keywords, threadNumber,variables, globalVariable, blocksAndNames);
+                        ChecksInSyntaxCheck(path, sr, codeLine, false, keywords, threadNumber,typeEnding, variables, globalVariable, blocksAndNames);
                     }
 
                 }
@@ -585,11 +690,8 @@ namespace testServer2
                     funcVariables.Add(lastFuncLine, new ArrayList(variables));
                     variables.Clear();
                 }
-
             }
             return CompileError;
-
-
         }
         /// Function - AddToHashFromFile
         /// <summary>
@@ -632,7 +734,7 @@ namespace testServer2
         /// <param name="includes"> Hashtable to store the includes.</param>
         /// <param name="defines"> Dictionary to store the defines . (key - new keyword, value - old Definition)</param>
         /// <param name="pathes"> Paths for all the places where the imports might be.</param>
-        static void PreprocessorActions(string path, int threadNumber, Hashtable keywords, Hashtable includes,Dictionary<string,string> defines,string [] pathes)
+        static void PreprocessorActions(string path, int threadNumber, Hashtable keywords, Hashtable includes,Dictionary<string,string> defines,string [] pathes,int fileThreadNumber)
         {
             bool endLoop = false;
             MyStream sr = null;
@@ -644,7 +746,7 @@ namespace testServer2
             catch (Exception e)
             {
                 MainProgram.AddToLogString(path,String.Format("{0} Second exception caught.", e.ToString()));
-                Server.ConnectionServer.CloseConnection(threadNumber, FILE_NOT_FOUND, GeneralConsts.ERROR);
+                Server.ConnectionServer.CloseConnection(fileThreadNumber, FILE_NOT_FOUND, GeneralConsts.ERROR);
                 endLoop = true;
             }
 
@@ -656,7 +758,7 @@ namespace testServer2
             string defineOriginalWord;
             while (!endLoop && (codeLine = sr.ReadLine()) != null)
             {
-
+                codeLine = cleanLineFromDoc(codeLine);
                 if (DefineDecleration.IsMatch(codeLine))
                 {
                     //getting both of the names in two variables.
@@ -765,7 +867,7 @@ namespace testServer2
                         if (result.IndexOf("\\") != -1)
                         {
                             //opens the thread (thread number +1).
-                            preprocessorThread = new Thread(() => PreprocessorActions(result, threadNumber + 1, keywords, includes,defines, pathes));
+                            preprocessorThread = new Thread(() => PreprocessorActions(result, threadNumber + 1, keywords, includes,defines, pathes,fileThreadNumber));
                         }
                         //if it does not include an exact path.
                         else
@@ -781,7 +883,7 @@ namespace testServer2
                                 }
                             }    
                             //creats a thread.
-                            preprocessorThread = new Thread(() => PreprocessorActions(currentPath+"\\" + result, threadNumber + 1, keywords, includes,defines, pathes));
+                            preprocessorThread = new Thread(() => PreprocessorActions(currentPath+"\\" + result, threadNumber + 1, keywords, includes,defines, pathes,fileThreadNumber));
                         }
                         preprocessorThread.Start();
                         preprocessorThread.Join(GeneralConsts.TIMEOUT_JOIN);
@@ -794,6 +896,7 @@ namespace testServer2
             {
                 sr.Close();
             }
+            printArrayList(path, keywords);
         }
         /// Function - CutBetween2Strings
         /// <summary>
@@ -828,11 +931,21 @@ namespace testServer2
             string tempString;
             string newVariableName;
             //if thats a typedef.
+            uint curpos = sr.Pos;
+            
             if (codeLine.IndexOf("typedef") != GeneralConsts.NOT_FOUND_STRING)
             {
                 //if thats not a typedef declaration.
                 if (!TypedefOneLine.IsMatch(codeLine))
                 {
+                    string structKeyword = codeLine.Trim(CharsToTrim);
+                    structKeyword = structKeyword.Substring(structKeyword.IndexOf("struct"));
+                    if (!keywords.Contains(CreateMD5(structKeyword)))
+                    {
+                        //adds the new keyword.
+                        keywords.Add(CreateMD5(structKeyword), structKeyword);
+                        results.Add(CreateMD5(structKeyword));
+                    }
                     if (NextScopeLength(sr, ref codeLine, ref count,false))
                     {
                         codeLine = codeLine.Trim(CharsToTrim);
@@ -883,6 +996,7 @@ namespace testServer2
 
             }
             //returns the ArrayList.
+            sr.Seek(curpos);
             return results;
 
 
@@ -930,14 +1044,14 @@ namespace testServer2
         /// <param name="includes"> Hashtable to store the includes.</param>
         /// <param name="defines"> Dictionary to store the defines.</param>
         /// <param name="pathes"> Paths for all the places where the imports might be.</param>
-        public static void initializeKeywordsAndSyntext(string ansiPath, string cFilePath, string CSyntextPath, string ignoreVariablesTypesPath, Hashtable keywords, Hashtable includes,Dictionary<string,string> defines,string [] pathes)
+        public static void initializeKeywordsAndSyntext(string ansiPath, string cFilePath, string CSyntextPath, string ignoreVariablesTypesPath, Hashtable keywords, Hashtable includes,Dictionary<string,string> defines,string [] pathes,int threadNumber)
         {
             //ansiC File To Keywords ArrayList.
             AddToHashFromFile(ansiPath, keywords, ",");
             AddToArrayListFromFile(ignoreVariablesTypesPath, ignoreVarialbesType, ",");
             //C Syntext File To Syntext ArrayList.
             //AddToListFromFile(CSyntextPath, syntext, " ");
-            PreprocessorActions(cFilePath, 0, keywords, includes,defines,pathes);
+            PreprocessorActions(cFilePath, 0, keywords, includes,defines,pathes,threadNumber);
         }
     }
 }

@@ -62,7 +62,8 @@ namespace testServer2
         public static void AddToLogString(string filePath,string content)
         {
             mutexAddLogFiles.WaitOne();
-            logFiles[filePath] += content + GeneralConsts.NEW_LINE;
+            //logFiles[filePath] += content + GeneralConsts.NEW_LINE;
+            Console.WriteLine(content);
             mutexAddLogFiles.ReleaseMutex();
         }
         /// Function - RunAllChecks
@@ -71,7 +72,7 @@ namespace testServer2
         /// </summary>
         /// <param name="filePath"></param>
         /// <param name="pathes"></param>
-        static void RunAllChecks(string filePath,string destPath, string [] pathes,ArrayList tools)
+        static void RunAllChecks(string filePath,string destPath, string [] pathes,ArrayList tools,string fileType)
         {
             //variable declaration.
             Hashtable keywords = new Hashtable();
@@ -83,7 +84,8 @@ namespace testServer2
             //initialize 
             try
             {
-                GeneralCompilerFunctions.initializeKeywordsAndSyntext(ansiCFile, filePath, CSyntextFile, ignoreVariablesTypesPath, keywords, includes, defines, pathes);
+                GeneralCompilerFunctions.initializeKeywordsAndSyntext(ansiCFile, filePath, CSyntextFile, ignoreVariablesTypesPath, keywords, includes, defines, pathes, threadNumber);
+                Console.WriteLine("after initialize");
             }
             catch(Exception e)
             {
@@ -96,15 +98,18 @@ namespace testServer2
             //Syntax Check.
             try
             {
-                compileError = GeneralCompilerFunctions.SyntaxCheck(filePath, globalVariable, keywords, funcVariables, threadNumber);
+                compileError = GeneralCompilerFunctions.SyntaxCheck(filePath, globalVariable, keywords, funcVariables, threadNumber, fileType);
             }
             catch(Exception e)
             {
                 AddToLogString(filePath, "ERROR IN SyntaxCheck");
                 ConnectionServer.CloseConnection(threadNumber, "ERROR IN SyntaxCheck " + e.ToString(), GeneralConsts.ERROR);
             }
-            
-            if(!compileError)
+            GeneralCompilerFunctions.printArrayList(filePath, keywords);
+            AddToLogString(filePath, keywords.Count.ToString());
+            Console.WriteLine("finished");
+
+            if (!compileError)
             {
                 GeneralCompilerFunctions.printArrayList(filePath,keywords);
                 AddToLogString(filePath, keywords.Count.ToString());
@@ -239,14 +244,7 @@ namespace testServer2
                     }
                     //because i still dont have a prefect checks for headers so im giving the thread a default null so the program can run.
                     Thread runChecksThread=null;
-                    if (filePath.Substring(filePath.Length - 1)=="h")
-                    {
-                        //Run header file checks.
-                    }
-                    else
-                    {
-                        runChecksThread = new Thread(() => RunAllChecks(filePath, destPath, pathes, tools));
-                    }
+                    runChecksThread = new Thread(() => RunAllChecks(filePath, destPath, pathes, tools, filePath.Substring(filePath.Length - 1)));
                     runChecksThread.Start();
 
                 }
